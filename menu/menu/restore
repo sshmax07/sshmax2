@@ -1,0 +1,115 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+
+clear
+IP=$(curl -sS ipv4.icanhazip.com)
+domain=$(cat /etc/xray/domain)
+mkdir -p /root/restore
+
+# ====== HEADER RESTORE ======
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo "          RESTORE DATA VPS   "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+
+while true; do
+    echo -n " Link Backup : "
+    read -r link_backup
+
+    # hapus spasi di depan/belakang (termasuk newline bawaan paste)
+    link_backup=$(echo "$link_backup" | xargs)
+
+    if [[ -z "$link_backup" ]]; then
+        echo " Link tidak boleh kosong. Silakan masukkan lagi."
+        continue
+    fi
+
+    echo " Link diterima: $link_backup"
+    break
+done
+
+# ====== DOWNLOAD BACKUP ======
+clear
+echo -e "${YELLOW}Mengunduh file backup...${NC}"
+wget --progress=bar:force -O /root/restore/backup.zip "$link_backup" 2>&1 | \
+    grep --line-buffered "%" | \
+    sed -u -e "s,\.,,g"
+
+# ====== EKSTRAK BACKUP ======
+clear
+echo -e "${YELLOW}Mengekstrak file backup...${NC}"
+total_files=$(unzip -Z1 /root/restore/backup.zip | wc -l)
+count=0
+unzip -o /root/restore/backup.zip -d /root/restore/ | while read line; do
+    ((count++))
+    percent=$((count*100/total_files))
+    echo -ne "Progress: $percent% \r"
+done
+echo -e "\n${Lgreen}Ekstrak selesai!${NC}"
+
+# ====== RESTORE FILE SISTEM ======
+clear
+echo -e "${YELLOW}Mengembalikan akun & konfigurasi sistem...${NC}"
+sleep 0.5
+cp -f /root/restore/backup/passwd /etc/ 2>/dev/null
+cp -f /root/restore/backup/group /etc/ 2>/dev/null
+cp -f /root/restore/backup/shadow /etc/ 2>/dev/null
+cp -f /root/restore/backup/gshadow /etc/ 2>/dev/null
+cp -f /root/restore/backup/crontab /etc/ 2>/dev/null
+echo -e "${Lgreen}Restore sistem selesai!${NC}"
+sleep 0.5
+
+# ====== RESTORE SSH ======
+clear
+echo -e "${YELLOW}Mengembalikan konfigurasi SSH...${NC}"
+sleep 0.5
+cp -f /root/restore/backup/sshd_config /etc/ssh/ 2>/dev/null
+cp -rf /root/restore/backup/ssh/* /etc/ssh/ 2>/dev/null
+[ -f /root/restore/backup/.ssh.db ] && cp -f /root/restore/backup/.ssh.db /etc/ssh/ 2>/dev/null
+echo -e "${Lgreen}Restore SSH selesai!${NC}"
+sleep 0.5
+
+# ====== RESTORE SERVICE ======
+clear
+echo -e "${YELLOW}Mengembalikan service VPS (Xray, Web, Kyt)...${NC}"
+sleep 0.5
+cp -rf /root/restore/backup/kyt/* /var/lib/kyt/ 2>/dev/null
+cp -rf /root/restore/backup/xray/* /etc/xray/ 2>/dev/null
+echo -e "${Lgreen}Restore service selesai!${NC}"
+sleep 0.5
+
+# ====== RESTART LAYANAN ======
+clear
+echo -e "${YELLOW}Merestart layanan VPS...${NC}"
+systemctl daemon-reload
+systemctl restart nginx
+systemctl restart xray
+systemctl restart rc-local
+systemctl restart dropbear
+systemctl restart haproxy 2>/dev/null
+echo -e "${Lgreen}Semua layanan berhasil direstart!${NC}"
+sleep 0.5
+
+# ====== BERSIHKAN FILE SEMENTARA ======
+clear
+echo -e "${YELLOW}Membersihkan file sementara...${NC}"
+rm -rf /root/restore
+sleep 0.5
+
+# ====== SELESAI ======
+clear
+echo -e "
+${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}
+         RESTORE VPS SELESAI
+${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}
+DOMAIN   : $domain
+IP VPS   : $IP
+${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}
+"
+
+read -p "Enter Untuk Kembali Ke Menu"
+menu-backup

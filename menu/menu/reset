@@ -1,0 +1,107 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+yell='\e[33m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+
+clear
+fun_bar() {
+    CMD[0]="$1"
+    (
+        [[ -e $HOME/fim ]] && rm $HOME/fim
+        ${CMD[0]} >/dev/null 2>&1
+        touch $HOME/fim
+    ) >/dev/null 2>&1 &
+    tput civis
+    echo -ne "  \033[0;33mLoading \033[1;37m- \033[0;33m["
+    while true; do
+        for ((i = 0; i < 18; i++)); do
+            echo -ne "\033[0;32m="
+            sleep 0.1s
+        done
+        [[ -e $HOME/fim ]] && rm $HOME/fim && break
+        echo -e "\033[0;33m]"
+        sleep 1s
+        tput cuu1
+        tput dl1
+        echo -ne "  \033[0;33mLoading \033[1;37m- \033[0;33m["
+    done
+    echo -e "\033[0;33m]\033[1;37m -\033[1;32m OK\033[1;37m"
+    tput cnorm
+}
+
+# === Service Functions ===
+res1() { systemctl daemon-reload; }
+res2() { systemctl restart netfilter-persistent; }
+res3() { systemctl restart haproxy; }
+res4() { systemctl restart nginx; }
+res5() { systemctl restart xray; }
+res6() { systemctl restart ws; }
+res7() { systemctl restart dropbear; }
+res8() { systemctl restart openvpn; }
+res9() { systemctl restart cron; }
+res10() { systemctl restart squid; }
+res11() { 
+    systemctl restart badvpn1
+    systemctl restart badvpn2
+    systemctl restart badvpn3
+}
+
+# === Run Section ===
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "            RESTART SERVICE           "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+
+echo -e "  \033[1;91m service daemon-reload\033[1;37m"
+fun_bar 'res1'
+
+echo -e "  \033[1;91m service restart netfilter\033[1;37m"
+fun_bar 'res2'
+
+echo -e "  \033[1;91m service restart haproxy\033[1;37m"
+fun_bar 'res3'
+
+echo -e "  \033[1;91m service restart nginx\033[1;37m"
+fun_bar 'res4'
+sleep 2
+
+echo -e "  \033[1;91m service restart xray\033[1;37m"
+fun_bar 'res5'
+sleep 2
+
+echo -e "  \033[1;91m service restart websocket\033[1;37m"
+fun_bar 'res6'
+
+echo -e "  \033[1;91m service restart dropbear\033[1;37m"
+fun_bar 'res7'
+
+echo -e "  \033[1;91m service restart openvpn\033[1;37m"
+fun_bar 'res8'
+
+echo -e "  \033[1;91m service restart cron\033[1;37m"
+fun_bar 'res9'
+
+echo -e "  \033[1;91m service restart squid\033[1;37m"
+fun_bar 'res10'
+
+echo -e "  \033[1;91m service restart badvpn\033[1;37m"
+fun_bar 'res11'
+
+# Jalankan badvpn manual
+screen -dmS badvpn1 badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 1000
+screen -dmS badvpn2 badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 1000
+screen -dmS badvpn3 badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 1000
+
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+menu

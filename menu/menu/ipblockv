@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# list-xray-blocked.sh
+# Menampilkan hanya IP yang terblokir oleh Fail2Ban (jail xray)
+
+# Ambil baris yang berisi "Banned IP list"
+banned_line=$(fail2ban-client status xray 2>/dev/null \
+  | grep "Banned IP list")
+
+# Ambil bagian setelah tanda ":"
+ips=$(echo "$banned_line" | cut -d: -f2-)
+
+# Pecah jadi baris per IP
+ips=$(echo "$ips" | tr ' ' '\n' | sed '/^$/d')
+
+if [[ -n "$ips" ]]; then
+  echo "=== Daftar IP Terblokir (xray) ==="
+  # Tampilkan dengan format kolom rapi
+  echo "$ips" | awk '{printf " %-15s\n", $1}'
+  echo
+  count=$(echo "$ips" | wc -l)
+  echo "Jumlah IP terblokir: $count"
+else
+  echo "Tidak ada IP terblokir"
+fi

@@ -1,0 +1,159 @@
+#!/bin/bash
+
+RED="\033[31m"
+NC='\e[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+YELL='\033[0;33m'
+BGWHITE='\e[0;100;37m'
+
+# // Export Color & Information
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[0;33m'
+export BLUE='\033[0;34m'
+export CYAN='\033[0;36m'
+export LIGHT='\033[0;37m'
+export NC='\033[0m'
+
+# // Export Banner Status Information
+export EROR="[${RED} EROR ${NC}]"
+export INFO="[${YELLOW} INFO ${NC}]"
+export OKEY="[${GREEN} OKEY ${NC}]"
+export PENDING="[${YELLOW} PENDING ${NC}]"
+export SEND="[${YELLOW} SEND ${NC}]"
+export RECEIVE="[${YELLOW} RECEIVE ${NC}]"
+clear
+red='\e[1;31m'
+green='\e[0;32m'
+NC='\e[0m'
+MYIP=$(wget -qO- icanhazip.com);
+echo "Checking VPS"
+clear
+if [ ! -e /usr/local/bin/reboot_otomatis ]; then
+echo '#!/bin/bash' > /usr/local/bin/reboot_otomatis 
+echo 'tanggal=$(date +"%m-%d-%Y")' >> /usr/local/bin/reboot_otomatis 
+echo 'waktu=$(date +"%T")' >> /usr/local/bin/reboot_otomatis 
+echo 'echo "Sucsesfully Reboot On $tanggal Time $waktu." >> /root/log-reboot.txt' >> /usr/local/bin/reboot_otomatis 
+echo '/sbin/shutdown -r now' >> /usr/local/bin/reboot_otomatis 
+chmod +x /usr/local/bin/reboot_otomatis
+fi
+clear
+echo -e ""
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           MENU MANAGER AUTOREBOOT        "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e " ${NC}[${Lgreen}01${NC}] Set Auto-Reboot 1 Hour Period"
+echo -e " ${NC}[${Lgreen}02${NC}] Set Auto-Reboot 6 Hour Period"
+echo -e " ${NC}[${Lgreen}03${NC}] Set Auto-Reboot 12 Hour Period"
+echo -e " ${NC}[${Lgreen}04${NC}] Set Auto-Reboot 1 Day Period"
+echo -e " ${NC}[${Lgreen}05${NC}] Set Auto-Reboot 1 Week Period"
+echo -e " ${NC}[${Lgreen}06${NC}] Set Auto-Reboot 1 Month Period"
+echo -e " ${NC}[${Lgreen}07${NC}] Deactivate Auto-Reboot"
+echo -e " ${NC}[${Lgreen}08${NC}] See Reboot Log"
+echo -e " ${NC}[${Lgreen}09${NC}] Delete Reboot Log"
+echo -e " ${NC}[${Lgreen}00${NC}] Back To Exit Menu"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -p " MENU : " opt
+
+case $opt in
+1 | 01)
+clear
+echo "59 * * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo -e "Auto-Reboot Sucsesfully Set By \e[32m1 Hour Period\e[0m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+2 | 02)
+clear
+echo "10 */6 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo -e "Auto-Reboot Sucsesfully Set By \e[32m6 Hour Period\e[0m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+3 | 03)
+clear
+echo "10 */12 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo -e "Auto-Reboot Sucsesfully Set By \e[32m12 Hour Period\e[0m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+4 | 04)
+clear
+echo "0 0 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo -e "Auto-Reboot Sucsesfully Set By \e[32m1 Day Period\e[0m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+5 | 05)
+clear
+echo "10 0 */7 * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo -e "Auto-Reboot Sucsesfully Set By \e[32m1 Week Period\e[0m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+6 | 06)
+clear
+echo "10 0 1 * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
+echo -e "Auto-Reboot Sucsesfully Set By \e[32m1 Month Period\e[0m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+7 | 07)
+clear
+rm -f /etc/cron.d/reboot_otomatis
+echo -e "Auto-Reboot Sucsesfully \e[31m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+8 | 08)
+clear
+if [ ! -e /root/log-reboot.txt ]; then
+	echo "No Activity Found"
+  	echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+	else 
+	#echo ' LOG REBOOT |'
+	echo -e "\033[1;93m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\033[0m"
+	echo -e "\033[1;93m│$NC\033[42m               LOG TIME REBOOT            $NC"
+	echo -e "\033[1;93m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\033[0m"
+	echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+	cat /root/log-reboot.txt
+	echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+	echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+fi
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+9 | 09)
+clear
+echo "" > /root/log-reboot.txt
+echo -e "Auto Reboot Log Sucsesfully \e[31mDeleted ..!\e[0m"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+autoreboot
+;;
+0 | 00)
+clear
+menu
+;;
+x)
+exit
+;;
+*)
+echo -e "Anda Salah Tekan"
+autoreboot
+;;
+esac

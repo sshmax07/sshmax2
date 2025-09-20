@@ -1,0 +1,24 @@
+#!/bin/bash
+
+GREEN='\033[0;32m'
+NC='\033[0;37m'
+
+clear
+echo -e ""
+echo -e " ${GREEN} Starting Restart All Service ${NC}"
+sleep 2
+/etc/init.d/ssh restart
+/etc/init.d/dropbear restart
+/etc/init.d/openvpn restart
+/etc/init.d/cron restart
+/etc/init.d/nginx restart
+systemctl stop udp-mini-1
+systemctl start udp-mini-1
+systemctl stop udp-mini-2
+systemctl start udp-mini-2
+systemctl stop udp-mini-3
+systemctl start udp-mini-3
+echo ""
+echo -e " ${GREEN} Back to menu in 2 sec ${NC}"
+sleep 2
+menu

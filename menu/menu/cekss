@@ -1,0 +1,55 @@
+#!/bin/bash
+
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+
+clear
+echo -n >/tmp/other.txt
+data=($(cat /etc/xray/config.json | grep '^#!#' | cut -d ' ' -f 2 | sort | uniq))
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "         CEK LOGIN AKUN SHADOWSHOCK           "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+for akun in "${data[@]}"; do
+    if [[ -z "$akun" ]]; then
+        akun="tidakada"
+    fi
+
+    echo -n >/tmp/ipshadowsocks.txt
+    data2=($(cat /var/log/xray/access.log | tail -n 500 | cut -d " " -f 3 | sed 's/tcp://g' | cut -d ":" -f 1 | sort | uniq))
+    for ip in "${data2[@]}"; do
+
+        jum=$(cat /var/log/xray/access.log | grep -w "$akun" | tail -n 500 | cut -d " " -f 3 | sed 's/tcp://g' | cut -d ":" -f 1 | grep -w "$ip" | sort | uniq)
+        if [[ "$jum" = "$ip" ]]; then
+            echo "$jum" >>/tmp/ipshadowsocks.txt
+        else
+            echo "$ip" >>/tmp/other.txt
+        fi
+        jum2=$(cat /tmp/ipshadowsocks.txt)
+        sed -i "/$jum2/d" /tmp/other.txt >/dev/null 2>&1
+    done
+
+    jum=$(cat /tmp/ipshadowsocks.txt)
+    if [[ -z "$jum" ]]; then
+        echo >/dev/null
+    else
+        jum2=$(cat /tmp/ipshadowsocks.txt | nl)
+        echo "user : $akun"
+        echo "$jum2"
+        echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    fi
+    rm -rf /tmp/ipshadowsocks.txt
+done
+
+rm -rf /tmp/other.txt
+echo ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+menu

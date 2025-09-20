@@ -1,0 +1,132 @@
+#!/bin/bash
+
+DF='\e[39m'
+Bold='\e[1m'
+Blink='\e[5m'
+yell='\e[33m'
+red='\e[31m'
+green='\e[32m'
+blue='\e[34m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+cyan='\e[36m'
+Lred='\e[91m'
+Lyellow='\e[93m'
+NC='\e[0m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+LIGHT='\033[0;37m'
+grenbo="\e[92;1m"
+# Getting
+CHATID=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 3)
+KEY=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 2)
+export TIME="10"
+export URL="https://api.telegram.org/bot$KEY/sendMessage"
+ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10 )
+CITY=$(curl -s ipinfo.io/city )
+domain=$(cat /etc/xray/domain)
+clear
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}"
+read -p "   Username      : " Login
+read -p "   Password      : " Pass
+read -p "   Expired (Days): " masaaktif
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}"
+IP=$(wget -qO- ipinfo.io/ip);
+# // String For IP & Port
+IP=$(curl -sS ifconfig.me);
+domen=$(cat /etc/xray/domain)
+NS=$(cat /etc/xray/dns)
+PUB=$(cat /etc/slowdns/server.pub)
+ws="$(cat ~/log-install.txt | grep -w "Websocket SSH TLS" | cut -d: -f2|sed 's/ //g')"
+ws2="$(cat ~/log-install.txt | grep -w "Websocket SSH HTTP" | cut -d: -f2|sed 's/ //g')"
+
+ssl="$(cat ~/log-install.txt | grep -w "Stunnel5" | cut -d: -f2)"
+sqd="$(cat ~/log-install.txt | grep -w "Squid" | cut -d: -f2)"
+ovpn="$(netstat -nlpt | grep -i openvpn | grep -i 0.0.0.0 | awk '{print $4}' | cut -d: -f2)"
+ovpn2="$(netstat -nlpu | grep -i openvpn | grep -i 0.0.0.0 | awk '{print $4}' | cut -d: -f2)"
+clear
+tgl=$(date -d "$masaaktif days" +"%d")
+bln=$(date -d "$masaaktif days" +"%b")
+thn=$(date -d "$masaaktif days" +"%Y")
+expe="$tgl $bln, $thn"
+tgl2=$(date +"%d")
+bln2=$(date +"%b")
+thn2=$(date +"%Y")
+tnggl="$tgl2 $bln2, $thn2"
+useradd -e `date -d "$masaaktif days" +"%Y-%m-%d"` -s /bin/false -M $Login
+expi="$(chage -l $Login | grep "Account expires" | awk -F": " '{print $2}')"
+echo -e "$Pass\n$Pass\n"|passwd $Login &> /dev/null
+hariini=`date -d "0 days" +"%Y-%m-%d"`
+expi=`date -d "$masaaktif days" +"%Y-%m-%d"`
+CHATID="$CHATID"
+KEY="$KEY"
+TIME="$TIME"
+URL="$URL"
+CHATID="$CHATID"
+KEY="$KEY"
+TIME="$TIME"
+URL="$URL"
+TEXT="<code>-----------------------</code>
+<code>   SlowDNS Premium </code>
+<code>-----------------------</code>
+<code>IP Server    =</code> <code>$IP</code>
+<code>Host SlowDNS =</code> <code>$NS</code>
+<code>Pub Key      =</code> <code>$PUB</code>
+<code>Username     =</code> <code>$Login</code>
+<code>Password     =</code> <code>$Pass</code>
+<code>-----------------------</code>
+Aktif Selama   : $masaaktif Hari
+Dibuat Pada    : $tnggl
+Berakhir Pada  : $expe
+<code>-----------------------</code>
+"
+
+curl -s --max-time $TIME -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
+clear
+# // Success
+sleep 1
+clear
+clear && clear && clear
+clear;clear;clear
+echo -e ""
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» INFORMASI AKUN « " | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» Domain  : $domain" | tee -a /etc/user-create/user.log
+echo -e "» Pengguna  : $Login" | tee -a /etc/user-create/user.log
+echo -e "» Sandi  : $Pass" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» Host Slowdns  : ${NS}" | tee -a /etc/user-create/user.log
+echo -e "» Pub Key  : ${PUB}" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» Port OpenSSH  : 443, 80, 22" | tee -a /etc/user-create/user.log
+echo -e "» Port DNS  : 443, 53 ,22 " | tee -a /etc/user-create/user.log
+echo -e "» Port SSH UDP  : 1-65535" | tee -a /etc/user-create/user.log
+echo -e "» Port Dropbear  : 443, 109" | tee -a /etc/user-create/user.log
+echo -e "» Port SSH WS  : 80, 8080, 8880, 2082" | tee -a /etc/user-create/user.log
+echo -e "» BadVPN UDP  : 7100, 7300, 7300" | tee -a /etc/user-create/user.log
+echo -e "» Pub Key  : ${PUB}" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» SSH-80  : $domain:80@$Login:$Pass" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» SSH-443  : $domain:443@$Login:$Pass" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» SSH-UDP  : $domain:1-65535@$Login:$Pass" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» WEBSOCKED" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e " GET / HTTP/1.1[crlf]host: $domain[crlf]Upgrade: Websocket[crlf][crlf]" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» ENHANCED" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━◈◈━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "PATCH / HTTP/1.1[crlf]Host: bug.com[crlf]Host: $domain[crlf]Upgrade: websocket[crlf]Connection: Upgrade[crlf][crlf]" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━━━━◈◈━━━━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo -e "» Batas Ip  : $iplimit Device" | tee -a /etc/user-create/user.log
+echo -e "» Batas Kuota  : $Quota GB" | tee -a /etc/user-create/user.log
+echo -e "» Aktif Selama  : $masaaktif Hari" | tee -a /etc/user-create/user.log
+echo -e "» Tanggal Dibuat  : $tnggl" | tee -a /etc/user-create/user.log
+echo -e "» Tanggal Exp  : $expe" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━━━━◈◈━━━━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo ""  | tee -a /etc/user-create/user.log
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu

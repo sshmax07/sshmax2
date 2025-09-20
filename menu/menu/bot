@@ -1,0 +1,43 @@
+#!/bin/bash
+
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+UPDATE="https://abc.xcodehoster.com/"
+BOT="https://abc.xcodehoster.com/"
+
+clear
+echo -e ""
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           MENU BOT TELEGRAM            "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}01${NC}]${YELL} Add Bot Notifikasi${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}02${NC}]${YELL} Delete Bot Notifikasi${NC}"
+echo -e ""
+echo -e " ${NC}   ${NC}[${RED}0x${NC}]${RED} Back To Menu${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -p " MENU : " menu
+
+case $menu in
+1) clear ;
+    add-bot-notif
+    ;;
+2) clear ;
+    del-bot-notif
+    ;;
+0 | 00 | x | X | 0x | 0X) clear ;
+    menu
+    ;;
+*) clear ;
+    bot
+    ;;
+esac

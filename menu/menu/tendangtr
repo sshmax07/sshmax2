@@ -1,0 +1,172 @@
+#!/bin/bash
+# uninstall-tendang-trojan-perakun-safe.sh
+# Safe uninstall helper for tendang-trojan-perakun
+set -euo pipefail
+
+REQUIRED_FILES=(
+  "/etc/systemd/system/tendang-trojan-perakun.service"
+  "/etc/systemd/system/tendang-trojan-perakun.timer"
+  "/usr/local/sbin/tendang-trojan-perakun"
+  "/usr/local/sbin/menu-trojan-perakun"
+)
+BACKUP_DIR="/root/iptables-backups"
+BLACKLIST="/tmp/trojan_perakun_blacklist"
+ACTION_LOG="/root/log-limit-trojan-perakun.txt"
+SERVICE="tendang-trojan-perakun"
+
+confirm() {
+  # confirm "Question" -> returns 0 for yes, 1 for no
+  read -p "$1 (y/N): " ans
+  case "$ans" in
+    y|Y) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+ensure_root() {
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "Jalankan sebagai root (sudo -i)." >&2
+    exit 1
+  fi
+}
+
+ensure_dirs() {
+  mkdir -p "$BACKUP_DIR"
+}
+
+backup_iptables() {
+  ensure_dirs
+  out="$BACKUP_DIR/iptables-$(date +%F-%H%M%S).save"
+  if iptables-save > "$out" 2>/dev/null; then
+    echo "Backup iptables dibuat: $out"
+  else
+    echo "Gagal membuat backup iptables." >&2
+  fi
+}
+
+list_backups() {
+  echo "=== Backup iptables yang tersedia ==="
+  ls -1t "$BACKUP_DIR" 2>/dev/null || echo "(tidak ada backup)"
+}
+
+restore_latest_backup() {
+  if [ ! -d "$BACKUP_DIR" ]; then
+    echo "Tidak ada folder backup."
+    return 1
+  fi
+  last=$(ls -1t "$BACKUP_DIR" 2>/dev/null | head -n1 || true)
+  if [ -z "$last" ]; then
+    echo "Tidak ada file backup."
+    return 1
+  fi
+  f="$BACKUP_DIR/$last"
+  echo "Restore backup terbaru: $f"
+  if confirm "Lanjut restore $f ?"; then
+    if iptables-restore < "$f" 2>/dev/null; then
+      echo "Restore iptables sukses."
+      return 0
+    else
+      echo "Restore iptables gagal." >&2
+      return 1
+    fi
+  else
+    echo "Batal restore."
+    return 2
+  fi
+}
+
+cleanup_blacklist_rules() {
+  if [ -f "$BLACKLIST" ] && [ -s "$BLACKLIST" ]; then
+    echo "Menghapus rule DROP dari blacklist..."
+    while read -r ip exp user; do
+      [ -z "$ip" ] && continue
+      iptables -D INPUT -s "$ip" -j DROP 2>/dev/null || true
+    done < "$BLACKLIST"
+    echo "Selesai mencabut DROP rules dari blacklist."
+  else
+    echo "Blacklist kosong atau tidak ada."
+  fi
+}
+
+disable_service_timer() {
+  echo "Menonaktifkan systemd timer & service..."
+  systemctl disable --now "${SERVICE}.timer" >/dev/null 2>&1 || true
+  systemctl stop "${SERVICE}.service" >/dev/null 2>&1 || true
+  systemctl daemon-reload
+  echo "Service & timer dinonaktifkan."
+}
+
+remove_files() {
+  echo "File yang akan dihapus (jika ada):"
+  for f in "${REQUIRED_FILES[@]}"; do
+    [ -f "$f" ] && echo "  $f"
+  done
+  [ -f "$BLACKLIST" ] && echo "  $BLACKLIST"
+  [ -f "$ACTION_LOG" ] && echo "  $ACTION_LOG"
+
+  if confirm "Hapus file-file di atas?"; then
+    for f in "${REQUIRED_FILES[@]}"; do
+      [ -f "$f" ] && rm -f "$f" && echo "Removed $f"
+    done
+    [ -f "$BLACKLIST" ] && rm -f "$BLACKLIST" && echo "Removed $BLACKLIST"
+    [ -f "$ACTION_LOG" ] && rm -f "$ACTION_LOG" && echo "Removed $ACTION_LOG"
+    echo "Files removed (if ada)."
+    systemctl daemon-reload
+  else
+    echo "Membatalkan penghapusan file."
+  fi
+}
+
+main() {
+  ensure_root
+  echo "=== Uninstall tendang-trojan-perakun (safe helper) ==="
+  echo
+  echo "Langkah 1: backup iptables sekarang"
+  backup_iptables
+  echo
+
+  if confirm "Apakah Anda ingin mencoba restore backup terbaru sebelum uninstall (recommended)?"; then
+    restore_latest_backup || true
+  fi
+  echo
+
+  if confirm "Apakah Anda ingin menghapus semua iptables DROP yang tercatat di blacklist sekarang?"; then
+    cleanup_blacklist_rules
+    # clear blacklist file
+    [ -f "$BLACKLIST" ] && > "$BLACKLIST"
+  else
+    echo "Melewatkan pembersihan blacklist (ingat untuk cek/manual unblock jika perlu)."
+  fi
+  echo
+
+  echo "Langkah berikutnya: menonaktifkan service & timer"
+  disable_service_timer
+  echo
+
+  echo "Langkah terakhir: menghapus file instalasi (service, timer, script, menu, uninstall helper, logs)."
+  if confirm "Lanjut hapus file instalasi?"; then
+    # remove service & timer files if exist
+    [ -f "/etc/systemd/system/tendang-trojan-perakun.service" ] && rm -f /etc/systemd/system/tendang-trojan-perakun.service && echo "Removed service file"
+    [ -f "/etc/systemd/system/tendang-trojan-perakun.timer" ] && rm -f /etc/systemd/system/tendang-trojan-perakun.timer && echo "Removed timer file"
+    # remove installed scripts
+    [ -f "/usr/local/sbin/tendang-trojan-perakun" ] && rm -f /usr/local/sbin/tendang-trojan-perakun && echo "Removed script"
+    [ -f "/usr/local/sbin/menu-trojan-perakun" ] && rm -f /usr/local/sbin/menu-trojan-perakun && echo "Removed menu"
+    [ -f "/usr/local/sbin/uninstall-tendang-trojan-perakun" ] && rm -f /usr/local/sbin/uninstall-tendang-trojan-perakun && echo "Removed old uninstall helper"
+    # optionally remove this helper itself
+    if confirm "Hapus helper uninstall ini juga?"; then
+      me="$0"
+      echo "Menghapus $me"
+      rm -f "$me" || true
+    fi
+    systemctl daemon-reload
+    echo "Penghapusan selesai."
+  else
+    echo "Membatalkan penghapusan file instalasi."
+  fi
+
+  echo
+  echo "Selesai. Periksa status systemd: systemctl status tendang-trojan-perakun.timer"
+  echo "Jika ingin restore iptables manual, lihat folder: $BACKUP_DIR"
+}
+
+main "$@"

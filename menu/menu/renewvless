@@ -1,0 +1,83 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+yell='\e[33m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+clear
+NUMBER_OF_CLIENTS=$(grep -c -E "^#& " "/etc/xray/config.json")
+	if [[ ${NUMBER_OF_CLIENTS} == '0' ]]; then
+		clear
+        echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+        echo -e "         PERBARUI AKUN VLESS        "
+        echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+		echo " Tidak Ada Akun"
+		echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+        echo ""
+        read -n 1 -s -r -p "ENTER UNTUK KEMBALI KE MENU"
+        menu
+	fi
+
+	clear
+    	echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+        echo -e "         PERBARUI AKUN VLESS        "
+        echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+  	grep -E "^#& " "/etc/xray/config.json" | cut -d ' ' -f 2-3 | column -t | sort | uniq
+       echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+	read -rp " Pengguna : " user
+    if [ -z $user ]; then
+    menu
+    else
+  #  rm -f /etc/kyt/limit/vless/ip/${user}
+    rm -f /etc/vless/$user
+    read -p " Masa Aktif : " masaaktif
+    read -p " Batas Kuota : " Quota
+    #read -p " Batas IP: " iplim
+    exp=$(grep -w "^#& $user" "/etc/xray/config.json" | cut -d ' ' -f 3 | sort | uniq)
+#    mkdir -p /etc/kyt/limit/vless/ip
+#echo ${iplim} >> /etc/kyt/limit/vless/ip/${user}
+#if [ ! -e /etc/vless/ ]; then
+#  mkdir -p /etc/vless/
+#fi
+
+if [ -z ${Quota} ]; then
+  Quota="0"
+fi
+
+c=$(echo "${Quota}" | sed 's/[^0-9]*//g')
+d=$((${c} * 1024 * 1024 * 1024))
+
+if [[ ${c} != "0" ]]; then
+  echo "${d}" >/etc/vless/${user}
+fi
+    now=$(date +%Y-%m-%d)
+    d1=$(date -d "$exp" +%s)
+    d2=$(date -d "$now" +%s)
+    exp2=$(( (d1 - d2) / 86400 ))
+    exp3=$(($exp2 + $masaaktif))
+    exp4=`date -d "$exp3 days" +"%Y-%m-%d"`
+    sed -i "/#& $user/c\#& $user $exp4" /etc/xray/config.json
+    sed -i "/#& $user/c\#& $user $exp4" /root/akun/vless/.vless.conf
+    systemctl restart xray > /dev/null 2>&1
+    clear
+    echo -e "${Lgreen}◈━━━━━━━━━━━━◈◈━━━━━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+    echo " » AKUN VLESS BERHASIL DIPERBARUI «"
+    echo -e "${Lgreen}◈━━━━━━━━━━━━◈◈━━━━━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+    echo " » Domain  : $(cat /etc/xray/domain)"
+    echo " » Pengguna  : $user"
+    echo " » Batas IP  : 2 Device"
+    echo " » Batas Kuota  : $Quota GB"
+    echo " » Tambahan Hari  : $masaaktif Hari"
+    echo " » Tanggal Exp  : $exp4"
+    echo -e "${PURPLE}◈━━━━━━━━━━━━◈◈━━━━━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+    echo ""
+    read -n 1 -s -r -p "ENTER UNTUK KEMBALI KE MENU"
+    menu
+    fi

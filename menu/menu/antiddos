@@ -1,0 +1,112 @@
+#!/bin/bash
+# install-antiddos.sh
+# Script install Anti-DDoS (ddos-deflate + iptables protection + whitelist)
+# Tanpa Fail2Ban
+
+set -euo pipefail
+
+BACKUP_DIR="/root/antiddos-backups"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+IPTABLES_SAVE="${BACKUP_DIR}/iptables-before-${TIMESTAMP}.v4"
+DDOS_DIR="/usr/local/ddos"
+DDOS_BIN="/usr/local/sbin/ddos"
+WHITELIST_FILE="/etc/antiddos.whitelist"
+
+NC='\033[0m'; GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'
+function info { echo -e "${YELLOW}[INFO]${NC} $*"; }
+function ok   { echo -e "${GREEN}[OK]${NC} $*"; }
+function err  { echo -e "${RED}[ERR]${NC} $*"; }
+
+require_root() { if [ "$(id -u)" -ne 0 ]; then err "Harus root!"; exit 1; fi; }
+
+deps_install() {
+  apt-get update -y
+  apt-get install -y iptables iptables-persistent curl jq netfilter-persistent
+}
+
+backup_iptables() {
+  mkdir -p "$BACKUP_DIR"
+  iptables-save > "$IPTABLES_SAVE" || true
+  ok "Backup iptables: $IPTABLES_SAVE"
+}
+
+install_ddos_deflate() {
+  if [ -d "$DDOS_DIR" ]; then info "ddos-deflate sudah ada."; return 0; fi
+  mkdir -p "$DDOS_DIR"
+  curl -fsSL https://raw.githubusercontent.com/jgmdev/ddos-deflate/master/src/ddos.sh -o "$DDOS_DIR/ddos.sh"
+  chmod +x "$DDOS_DIR/ddos.sh"
+  cat > "$DDOS_BIN" <<'EOF'
+#!/bin/bash
+/usr/local/ddos/ddos.sh "$@"
+EOF
+  chmod +x "$DDOS_BIN"
+  (crontab -l 2>/dev/null | grep -v '/usr/local/ddos/ddos.sh' || true; echo "* * * * * /usr/local/ddos/ddos.sh -c") | crontab -
+  ok "ddos-deflate terinstall & aktif via cron."
+}
+
+detect_v2ray_ports() {
+  local OUT=()
+  local candidates=(
+    "/etc/v2ray/config.json"
+    "/etc/xray/config.json"
+    "/usr/local/etc/xray/config.json"
+    "/usr/local/etc/v2ray/config.json"
+  )
+  for f in "${candidates[@]}"; do
+    if [ -f "$f" ]; then
+      mapfile -t ports < <(jq -r '.inbounds[]?.port // empty' "$f" 2>/dev/null || grep -oP '"port"\s*:\s*\K[0-9]+' "$f" || true)
+      for p in "${ports[@]:-}"; do OUT+=("$p"); done
+    fi
+  done
+  printf "%s\n" "${OUT[@]}" | sort -n -u
+}
+
+apply_iptables_rules() {
+  local PORTS=(22 80 8880 443)
+  read -r -a V2RAY_PORTS <<< "$(detect_v2ray_ports || true)"
+  PORTS+=("${V2RAY_PORTS[@]}")
+
+  info "Setting iptables untuk port: ${PORTS[*]}"
+
+  iptables -F; iptables -X; iptables -t nat -F; iptables -t mangle -F
+  iptables -P INPUT DROP; iptables -P FORWARD DROP; iptables -P OUTPUT ACCEPT
+
+  iptables -A INPUT -i lo -j ACCEPT
+  iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+  if [ -f "$WHITELIST_FILE" ]; then
+    while read -r ip; do
+      [ -z "$ip" ] && continue
+      iptables -A INPUT -s "$ip" -j ACCEPT
+      info "Whitelisted: $ip"
+    done < "$WHITELIST_FILE"
+  fi
+
+  # SSH brute-force protection
+  iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+  iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 -j DROP
+  iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+  for p in "${PORTS[@]}"; do
+    iptables -A INPUT -p tcp --dport "$p" -m connlimit --connlimit-above 120 -j DROP
+    iptables -A INPUT -p tcp --dport "$p" -m limit --limit 120/second --limit-burst 300 -j ACCEPT
+    iptables -A INPUT -p tcp --dport "$p" -j DROP
+    iptables -A INPUT -p udp --dport "$p" -m limit --limit 500/second --limit-burst 800 -j ACCEPT
+    iptables -A INPUT -p udp --dport "$p" -j DROP
+  done
+
+  iptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 1/second --limit-burst 3 -j ACCEPT
+  iptables -A INPUT -p icmp -j DROP
+  iptables -A INPUT -m state --state INVALID -j DROP
+
+  netfilter-persistent save || iptables-save > /etc/iptables/rules.v4
+  ok "iptables rules applied & saved."
+}
+
+### main flow
+require_root
+deps_install
+backup_iptables
+install_ddos_deflate
+apply_iptables_rules
+ok "Anti-DDoS (ddos-deflate + iptables) berhasil diinstall!"

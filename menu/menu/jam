@@ -1,0 +1,96 @@
+#!/bin/bash
+DF='\e[39m'
+Bold='\e[1m'
+Blink='\e[5m'
+yell='\e[33m'
+red='\e[31m'
+green='\e[32m'
+blue='\e[34m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+cyan='\e[36m'
+Lred='\e[91m'
+Lgreen='\e[92m'
+Lyellow='\e[93m'
+NC='\e[0m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+LIGHT='\033[0;37m'
+grenbo="\e[92;1m"
+clear
+dateFromServer=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
+biji=`date +"%Y-%m-%d" -d "$dateFromServer"`
+
+BICyan='\033[1;96m'       # Cyan
+red='\e[1;31m'
+green='\e[0;32m'
+NC='\e[0m'
+green() { echo -e "\\033[32;1m${*}\\033[0m"; }
+red() { echo -e "\\033[31;1m${*}\\033[0m"; }
+clear
+aureb=$(cat /home/re_otm)
+b=11
+if [ $aureb -gt $b ]
+then
+gg="PM"
+else
+gg="AM"
+fi
+
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "         DAILY REBOOT 00-23 "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "
+    ${green}Example :${NC}
+    0     = 12 PM
+    12    = 12 AM
+    13-23 = 1 AM - 11 PM
+    1-11  = 1 PM - 11 AM
+"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "     ${green}Current : $aureb $gg ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+
+while :; do
+  read -p "Input time auto reboot only 0 - 23 : " tr2
+  [[ $tr2 =~ ^[0-9]+$ ]] || { echo -ne; continue; }
+  if ((tr2 >= 0 && tr2 <= 23)); then
+    echo -ne
+    break
+  else
+    echo "Can't be more than 23"
+  fi
+done
+
+if [ -z $tr2 ]; then
+echo "..."
+exit 0
+fi
+
+if [ $tr2 -le 11 ]
+then
+beha=$(cat /home/re_otm)
+echo "$tr2" > /home/re_otm
+cat >/etc/cron.d/daily_reboot <<-END
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+0 $tr2 * * * root /sbin/reboot
+END
+echo -e "${green}Successfully changed the auto reboot vps to : $tr2 AM ${NC}"
+service cron restart >/dev/null 2>&1
+service cron reload >/dev/null 2>&1
+else
+beha=$(cat /home/re_otm)
+echo "$tr2" > /home/re_otm
+cat >/etc/cron.d/daily_reboot <<-END
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+0 $tr2 * * * root /sbin/reboot
+END
+echo -e "${green}Successfully changed the auto reboot vps to- : $tr2 PM ${NC}"
+service cron restart >/dev/null 2>&1
+service cron reload >/dev/null 2>&1
+fi
+echo ""
+read -n 1 -s -r -p "ENTER UNTUK KEMBALI KE MENU"
+menu

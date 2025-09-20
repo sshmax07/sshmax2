@@ -1,0 +1,36 @@
+#!/bin/bash
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+
+clear
+red() { echo -e "\\033[32;1m${*}\\033[0m"; }
+clear
+NUMBER_OF_CLIENTS=$(grep -c -E "^#bot# " "/etc/bot/bot.db")
+if [[ ${NUMBER_OF_CLIENTS} == '0' ]]; then
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "          HAPUS BOT NOTIFIKASI           "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo "Bot Notifikasi Tidak Ada"
+    echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+    menu
+fi
+
+clear
+CHATID=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 3)
+KEY=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 2)
+sed -i "/^#bot# $bottken $admin/d" /etc/bot/.bot.db
+rm -rf /etc/bot/.bot.db
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "          SUKSES HAPUS BOT NOTIFIKASI           "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo "Bot Token    : $KEY"
+echo "ID Telegram  : $CHATID"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+
+menu 

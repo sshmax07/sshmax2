@@ -1,0 +1,43 @@
+#!/bin/bash
+# Script minimalis aktivasi UDP di VPS + logging + auto run saat reboot (hanya GitHub)
+
+# Folder log
+LOG_FOLDER="/var/log/udp-auto"
+mkdir -p "$LOG_FOLDER"
+LOG_FILE="$LOG_FOLDER/udp-auto-$(date +%Y-%m-%d).log"
+
+# Fungsi log
+log() {
+    echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+log "Mulai proses aktivasi UDP (hanya GitHub)..."
+
+# 1. Jalankan udp-custom.sh dari GitHub langsung dari URL
+log "Menjalankan udp-custom.sh dari GitHub..."
+if bash <(wget -qO- https://raw.githubusercontent.com/zhets/project/main/ssh/udp-custom.sh) >>"$LOG_FILE" 2>&1; then
+    log "Script udp-custom.sh berhasil dijalankan."
+else
+    log "ERROR: Script udp-custom.sh gagal dijalankan."
+fi
+
+# 2. Cek port UDP yang aktif
+log "Cek port UDP yang sedang listening..."
+ss -u -l -n >>"$LOG_FILE" 2>&1
+
+# 3. Tambahkan auto run saat reboot langsung di crontab
+REBOOT_CMD="@reboot bash -c 'bash <(wget -qO- https://raw.githubusercontent.com/zhets/project/main/ssh/udp-custom.sh) >>\"$LOG_FILE\" 2>&1'"
+crontab -l 2>/dev/null | grep -F "$REBOOT_CMD" >/dev/null
+if [ $? -ne 0 ]; then
+    (crontab -l 2>/dev/null; echo "$REBOOT_CMD") | crontab -
+    log "Auto run UDP script sudah ditambahkan saat reboot."
+else
+    log "Auto run UDP script sudah terdaftar di crontab."
+fi
+
+# 4. Hapus log lama lebih dari 7 hari
+log "Membersihkan log lebih dari 7 hari..."
+find "$LOG_FOLDER" -type f -name "*.log" -mtime +7 -exec rm -f {} \;
+log "Pembersihan log lama selesai."
+
+log "Proses aktivasi UDP selesai. Log tersimpan di $LOG_FILE"

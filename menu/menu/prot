@@ -1,0 +1,48 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+yell='\e[33m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "         INFORMASI SEMUA SERVICE            "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "» Open SSH                : 443, 80, 22   "
+echo -e "» Dropbear                : 443, 109, 143 "
+echo -e "» Dropbear Websocket      : 443, 109      "
+echo -e "» SSH Websocket SSL       : 443           "
+echo -e "» SSH Websocket           : 80            "
+echo -e "» OpenVPN SSL             : 443           "
+echo -e "» OpenVPN Websocket SSL   : 443           "
+echo -e "» OpenVPN TCP             : 443, 1194     "
+echo -e "» OpenVPN UDP             : 2200          "
+echo -e "» Nginx Webserver         : 443, 80, 81   "
+echo -e "» Haproxy Loadbalancer    : 443, 80       "
+#echo -e "» DNS Server              : 443, 53,      "
+#echo -e "» DNS Client              : 443, 88       "
+echo -e "» OpenVPN Websocket SSL   : 443           "
+#echo -e "» XRAY DNS (SLOWDNS)      : 443, 53       "
+echo -e "» XRAY Vmess TLS          : 443           "
+echo -e "» XRAY Vmess gRPC         : 443           "
+echo -e "» XRAY Vmess None TLS     : 80            "
+echo -e "» Vless TLS               : 443           "
+echo -e "» XRAY Vless gRPC         : 443           "
+echo -e "» XRAY Vless None TLS     : 80            "
+echo -e "» Trojan gRPC             : 443           "
+echo -e "» Trojan WS               : 443           "
+echo -e "» Shadowsocks WS          : 443           "
+echo -e "» BadVPN 1                : 7100          "
+echo -e "» BadVPN 2                : 7200          "
+echo -e "» BadVPN 3                : 7300          "
+#echo -e "» Proxy Squid             : 3128          "
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo ""
+read -n 1 -s -r -p "ENTER UNTUK KEMBALI KE MENU"
+menu

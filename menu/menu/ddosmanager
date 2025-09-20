@@ -1,0 +1,136 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+yell='\e[33m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+clear
+ipsaya=$(curl -sS ipv4.icanhazip.com)
+data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
+date_list=$(date +"%Y-%m-%d" -d "$data_server")
+data_ip="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
+checking_sc() {
+  useexp=$(wget -qO- $data_ip | grep $ipsaya | awk '{print $3}')
+  if [[ $date_list < $useexp ]]; then
+    echo -ne
+  else
+    echo -e "\033[1;93mâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\033[0m"
+    echo -e "\033[42m          404 NOT FOUND AUTOSCRIPT          \033[0m"
+    echo -e "\033[1;93mâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\033[0m"
+    echo -e ""
+    echo -e "            ${RED}PERMISSION DENIED !${NC}"
+    echo -e "   \033[0;33mYour VPS${NC} $ipsaya \033[0;33mHas been Banned${NC}"
+    echo -e "\033[1;93mâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\033[0m"
+    exit 0
+  fi
+}
+checking_sc
+clear
+
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈${NC}"
+echo -e "              DDOS MANAGER              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈${NC}"
+echo -e "$NC   [${Lgreen}01${NC}]. INSTALL ANTI DDOS   "
+echo -e "$NC   [${Lgreen}02${NC}]. INSTALL FAIL2BAN  "
+echo -e "$NC   [${Lgreen}03${NC}]. INSTALL JAIL    "
+echo -e "$NC   [${Lgreen}04${NC}]. HAPUS ANTI DDOS    "
+echo -e "$NC   [${Lgreen}05${NC}]. HAPUS FAIL2BAN    "
+echo -e "$NC   [${Lgreen}06${NC}]. STATUS ANTI DDOS       "
+echo -e "$NC   [${Lgreen}07${NC}]. STATUS FAIL2BAN  "
+echo -e "$NC   [${Lgreen}08${NC}]. IP TERBLOKIR ( SSH )      "
+echo -e "$NC   [${Lgreen}09${NC}]. IP TERBLOKIR ( XRAY )    "
+echo -e "$NC   [${Lgreen}10${NC}]. PORT TERLINDUNGI " 
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈${NC}"
+read -p " MENU : " opt
+echo -e ""
+case $opt in
+1 | 01)
+clear
+antiddos
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+2 | 02)
+clear
+fail2ban
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+3 | 03)
+clear
+jail
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+4 | 04)
+clear
+antiddosun
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+5 | 05)
+clear
+fail2banun
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+6 | 06)
+clear
+statusantiddos
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+7 | 07)
+clear
+statusfail2ban
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+8 | 08)
+clear
+ipblockssh
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+9 | 09)
+clear
+ipblockv
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+10 | 10)
+clear
+ports
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+ddosmanager
+;;
+0 | 00)
+menu-system
+;;
+x)
+menu
+;;
+*) clear ;
+echo -e
+menu
+;;
+esac
+clear

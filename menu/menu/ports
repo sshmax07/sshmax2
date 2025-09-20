@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# list-protected-ports.sh
+# Menampilkan daftar port yang terlindungi (iptables INPUT dpt:)
+
+echo "=== Daftar Port yang Terlindungi ==="
+iptables -L INPUT -n -v --line-numbers \
+  | grep -E 'dpt:|dpt=' \
+  | awk '{for (i=1;i<=NF;i++) if ($i ~ /dpt:/) print $i}' \
+  | sed 's/dpt://g' \
+  | sort -n | uniq || echo "(tidak ada rule dengan dpt:)"
+
+echo

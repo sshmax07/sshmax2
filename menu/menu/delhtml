@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# Folder target
+TARGET_DIR="/var/www/html"
+
+# Umur file yang dianggap expired (default: 30 hari)
+if [ -n "$1" ]; then
+    DAYS=$1
+else
+    DAYS=30
+fi
+
+# Hitung batas waktu (hari ke detik)
+NOW=$(date +%s)
+LIMIT=$((DAYS * 86400))
+
+# Cari file expired berdasarkan tanggal terakhir diubah (mtime)
+EXPIRED_FILES=()
+for file in "$TARGET_DIR"/*; do
+    [ -f "$file" ] || continue
+    FILE_MTIME=$(stat -c %Y "$file")
+    AGE=$((NOW - FILE_MTIME))
+    if [ "$AGE" -gt "$LIMIT" ]; then
+        EXPIRED_FILES+=("$file")
+    fi
+done
+
+echo "=== MENU CLEANUP FILES ==="
+echo "1) Lihat semua file"
+echo "2) Hapus file expired satu per satu"
+echo "3) Hapus semua file expired sekaligus"
+echo "4) Batal"
+echo "=========================="
+
+read -p "Pilih [1-4]: " choice
+
+case "$choice" in
+    1)
+        echo
+        echo "Daftar semua file di $TARGET_DIR:"
+        ls -lah "$TARGET_DIR"
+        ;;
+    2)
+        if [ ${#EXPIRED_FILES[@]} -eq 0 ]; then
+            echo "Tidak ada file expired (lebih tua dari $DAYS hari)."
+            exit 0
+        fi
+        echo "File expired (lebih tua dari $DAYS hari):"
+        for file in "${EXPIRED_FILES[@]}"; do
+            modtime=$(stat -c %y "$file" | cut -d'.' -f1)
+            echo "[$modtime] $file"
+            read -p "Hapus file ini? (y/n) " ans
+            if [[ "$ans" == "y" || "$ans" == "Y" ]]; then
+                rm -v "$file"
+            fi
+        done
+        ;;
+    3)
+        if [ ${#EXPIRED_FILES[@]} -eq 0 ]; then
+            echo "Tidak ada file expired (lebih tua dari $DAYS hari)."
+            exit 0
+        fi
+        echo "Menghapus semua file expired (lebih tua dari $DAYS hari):"
+        for file in "${EXPIRED_FILES[@]}"; do
+            modtime=$(stat -c %y "$file" | cut -d'.' -f1)
+            echo "[$modtime] $file"
+        done
+        echo
+        read -p "Lanjut hapus semua? (y/n) " ans
+        if [[ "$ans" == "y" || "$ans" == "Y" ]]; then
+            rm -v "${EXPIRED_FILES[@]}"
+        else
+            echo "Dibatalkan."
+        fi
+        ;;
+    4)
+        echo "Dibatalkan."
+        ;;
+    *)
+        echo "Pilihan tidak valid."
+        ;;
+esac

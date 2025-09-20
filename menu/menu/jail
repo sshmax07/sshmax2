@@ -1,0 +1,67 @@
+#!/bin/bash
+# install-xray-fail2ban.sh
+# Auto setup Fail2Ban jail + filter untuk Xray
+# Membuat/menimpa jail.d/xray.conf, jail.d/xray.local, filter.d/xray.conf
+
+set -e
+
+JAIL_DIR="/etc/fail2ban/jail.d"
+FILTER_DIR="/etc/fail2ban/filter.d"
+
+JAIL_FILE="$JAIL_DIR/xray.conf"
+LOCAL_FILE="$JAIL_DIR/xray.local"
+FILTER_FILE="$FILTER_DIR/xray.conf"
+
+echo "[*] Membuat direktori jail.d dan filter.d jika belum ada..."
+mkdir -p "$JAIL_DIR"
+mkdir -p "$FILTER_DIR"
+
+# === Jail Config ===
+echo "[*] Menulis ulang jail config di $JAIL_FILE ..."
+cat > "$JAIL_FILE" <<EOF
+[xray]
+enabled   = true
+port      = 80,8880,443
+protocol  = tcp
+filter    = xray
+logpath   = /var/log/xray/access.log
+           /var/log/xray/error.log
+backend   = auto
+EOF
+
+# === Jail Local Config ===
+echo "[*] Menulis ulang local config di $LOCAL_FILE ..."
+cat > "$LOCAL_FILE" <<EOF
+[DEFAULT]
+bantime  = 3600      ; ban 1 jam
+findtime = 600       ; periode cek 10 menit
+maxretry = 3         ; gagal login 3x diblok
+ignoreip = 127.0.0.1/8
+EOF
+
+# === Filter Config ===
+echo "[*] Menulis ulang filter config di $FILTER_FILE ..."
+cat > "$FILTER_FILE" <<'EOF'
+[Definition]
+failregex = ^\S+ \S+ <HOST>:\d+ rejected\s+proxy/trojan: not a valid>
+            ^\S+ \S+ <HOST>:\d+ rejected\s+proxy/vmess: invalid user
+            ^\S+ \S+ <HOST>:\d+ rejected\s+proxy/vless: invalid user
+            ^\S+ \S+ <HOST>:\d+ rejected\s+proxy/vless: failed to re>
+            ^.*\[<HOST>\].*rejected.*$
+            ^.*\[<HOST>\].*authentication failed.*$
+            ^.*<HOST>:\d+ - .*authentication failed.*$
+ignoreregex =
+EOF
+
+echo "[*] Jail, local, dan filter config berhasil dibuat/ditimpa"
+
+# Restart Fail2Ban agar konfigurasi aktif
+echo "[*] Restarting Fail2Ban..."
+if command -v systemctl &>/dev/null; then
+    systemctl restart fail2ban
+else
+    service fail2ban restart
+fi
+
+echo "[*] Selesai."
+echo "    Cek status jail dengan: fail2ban-client status xray"

@@ -1,0 +1,100 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+
+# Bersihkan layar di awal
+clear
+
+# Server info
+IP=$(curl -sS ipv4.icanhazip.com)
+domain=$(cat /etc/xray/domain)
+date=$(date +"%Y-%m-%d")
+
+# ====== PERSIAPAN ======
+clear
+mkdir -p /var/lib/kyt
+mkdir -p /etc/xray
+mkdir -p /root/backup
+
+# ====== INFO BACKUP ======
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo "          BACKUP DATA VPS   "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━◈◈━━━━━━━━◈ ${NC}"
+echo " Proses Backup ...   "
+
+# ====== HAPUS BACKUP LAMA ======
+clear
+echo -e "${YELLOW}Menghapus backup lama...${NC}"
+rm -rf /root/backup/*
+
+# ====== BACKUP FILE SISTEM ======
+clear
+echo -e "${YELLOW}Membackup akun & konfigurasi sistem...${NC}"
+cp /etc/passwd /root/backup/ 2>/dev/null
+cp /etc/group /root/backup/ 2>/dev/null
+cp /etc/shadow /root/backup/ 2>/dev/null
+cp /etc/gshadow /root/backup/ 2>/dev/null
+cp /etc/crontab /root/backup/ 2>/dev/null
+
+# ====== BACKUP SSH ======
+clear
+echo -e "${YELLOW}Membackup konfigurasi SSH...${NC}"
+cp /etc/ssh/sshd_config /root/backup/ 2>/dev/null
+cp -r /etc/ssh/ /root/backup/ssh 2>/dev/null
+[ -f /etc/ssh/.ssh.db ] && cp /etc/ssh/.ssh.db /root/backup/ 2>/dev/null
+
+# ====== BACKUP SERVICE ======
+clear
+echo -e "${YELLOW}Membackup service VPS (Xray, Web, Kyt)...${NC}"
+cp -r /var/lib/kyt/ /root/backup/kyt 2>/dev/null
+cp -r /etc/xray /root/backup/xray 2>/dev/null
+
+# ====== KOMPRES FILE ======
+clear
+echo -e "${YELLOW}Mengkompres hasil backup...${NC}"
+cd /root
+zip -r $domain-$IP-$date.zip backup > /dev/null 2>&1
+
+# ====== HAPUS BACKUP LAMA DI GOOGLE DRIVE ======
+clear
+echo -e "${YELLOW}Menghapus file backup lama di Google Drive...${NC}"
+rclone delete dr:backup --min-age 1d --include "$domain-$IP-*.zip"
+
+# ====== UPLOAD BACKUP BARU ======
+clear
+echo -e "${YELLOW}Mengupload file backup ke Google Drive...${NC}"
+rclone copy /root/$domain-$IP-$date.zip dr:backup/
+
+# ====== AMBIL LINK GOOGLE DRIVE ======
+clear
+echo -e "${YELLOW}Mengambil link download backup...${NC}"
+url=$(rclone link dr:backup/$domain-$IP-$date.zip)
+id=$(echo $url | grep -o 'id=.*' | cut -d'=' -f2)
+link="https://drive.google.com/u/4/uc?id=${id}&export=download"
+
+# ====== HAPUS FILE SEMENTARA ======
+clear
+echo -e "${YELLOW}Membersihkan file sementara...${NC}"
+rm -rf /root/backup
+rm -f /root/$domain-$IP-$date.zip
+
+# ====== OUTPUT ======
+clear
+echo -e "
+${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}
+             DETAIL BACKUP
+${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}
+DOMAIN   : $domain
+IP VPS   : $IP
+Link     : $link
+Tanggal  : $date
+${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}
+"
+
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-backup

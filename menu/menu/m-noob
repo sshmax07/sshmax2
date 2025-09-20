@@ -1,0 +1,285 @@
+#!/bin/bash
+DF='\e[39m'
+Bold='\e[1m'
+Blink='\e[5m'
+yell='\e[33m'
+red='\e[31m'
+green='\e[32m'
+blue='\e[34m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+cyan='\e[36m'
+Lred='\e[91m'
+Lgreen='\e[92m'
+Lyellow='\e[93m'
+NC='\e[0m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+LIGHT='\033[0;37m'
+grenbo="\e[92;1m"
+clear
+# // Exporting Language to UTF-8
+export LC_ALL='en_US.UTF-8'
+export LANG='en_US.UTF-8'
+export LANGUAGE='en_US.UTF-8'
+export LC_CTYPE='en_US.utf8'
+
+# // Export Color & Information
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[0;33m'
+export BLUE='\033[0;34m'
+export PURPLE='\033[0;35m'
+export CY='\033[0;36m'
+export LIGHT='\033[0;37m'
+export NC='\033[0m'
+
+# // Export Banner Status Information
+export EROR="[${RED} EROR ${NC}]"
+export INFO="[${YELLOW} INFO ${NC}]"
+export OKEY="[${GREEN} OKEY ${NC}]"
+export PENDING="[${YELLOW} PENDING ${NC}]"
+export SEND="[${YELLOW} SEND ${NC}]"
+export RECEIVE="[${YELLOW} RECEIVE ${NC}]"
+
+# // Export Align
+export BOLD="\e[1m"
+export WARNING="${RED}\e[5m"
+export UNDERLINE="\e[4m"
+
+# // Exporting URL Host
+export Server_URL="autosc.me/aio"
+export Server_Port="443"
+export Server_IP="underfined"
+export Script_Mode="Stable"
+export Auther="XdrgVPN"
+
+function garis() {
+echo -e "${CY}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈${NC}"
+}
+
+url_izin="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
+ipsaya=$(curl -sS ipv4.icanhazip.com)
+data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
+date_list=$(date +"%Y-%m-%d" -d "$data_server")
+checking_sc() {
+useexp=$(wget -qO- $url_izin | grep $ipsaya | awk '{print $3}')
+if [[ $date_list < $useexp ]]; then
+echo -ne
+else
+lane
+echo -e "\033[42m          404 NOT FOUND AUTOSCRIPT          ${exitsc}"
+lane
+echo -e ""
+echo -e "            \033[0;35mPERMISSION DENIED !${exitsc}"
+echo -e "   ${j}Your VPS${exitsc} $ipsaya ${j}Has been Banned${exitsc}"
+lane
+exit
+fi
+}
+checking_sc
+
+
+function create(){
+clear
+
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              BUAT AKUN NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+read -p " Pengguna : " user
+read -p " Sandi : " pass
+read -p " Masa Aktif : " exp
+read -p " Batas IP : " ip
+
+if [ ! -e /etc/sshmax07/limit/noobs/ip/ ]; then
+  mkdir -p /etc/sshmax07/limit/noobs/ip/
+fi
+echo "$ip" > /etc/sshmax07/limit/noobs/ip/$user
+
+noobzvpns --add-user $user $pass --expired-user $user $exp
+
+
+clear
+
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "» INFORMASI AKUN « "
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "» Domain : $( cat /etc/xray/domain )"
+echo -e "» Pengguna : $user"
+echo -e "» Sandi : $pass"
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "» Batas IP : $ip"
+echo -e "» Tanggal Exp : $exp DAYS"
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "» tcp_std port:  2082,8080"
+echo -e "» tcp_ssl port: 8443"
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "» Example config TCP_STD 2082,8080"
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "EJrIfen5qGdVYT5k7bQgnZQPpd5vVPkchArH8YQlK0rceZ7rgssiVPWGid2nI5mWEBaCBAUXmCO9lqIlEkGWQEy6jqWc4fKhtS5aWomNVX1/Hgd8p0fzQe2aTtMY6Md/J4hd9ssK7VZLpcPL74i5zkFeBGX+iUuT3Zgexuje5LUdkWzusa/sHgU3kPnbAZIEWO26ghc7GVjxJGbJKcDRnf2ufhV5iHkyI1NoXQlx+b5hFfjVAFEpZWyAGla1DR7Zn7Tp3G/GPqUEVrJ0SFClBMhVOv40/SwIdTrqLeDcxjStCd/14TDXNdlEHQbsvRd2zfBKoCTnWRKmvx2kmFRP+zy9KzkW6EemJt5zIIgYwirBpX/loDpHzfblaUGL2+WN/0LRD/TInoK2WX33WM+JDgG/XiWyy5h3xgAyAvgx4rLtuYX+m/kgx+p+CxBpZFJ1CZ09ThaPRjsoO6aG+6edEHZTmk9cxjGgXW/ou5wL8XcFt9xwKBYyLR4t+JD+8o9kxZdc+ZJsi0QJq6gw5NqfiDB6OKWYcYdpXvIrOa+mpc2RDa/7Ra4RVg1tLsRQ4+IxJ6gQRm1T3ydkW71UKcW9kYvSyhPWpZYg5GkjZI5YGRl9e4Y8ujk="
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "» Example config TCP_SSL 8443"
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+echo -e "EMzhKvWX2V7h3pHP5ez/k2i1XMhdPh6WVetdSik3kr0f3ynS23Mmfh5NGzbqCme3KqV+1w0AXMwr5G4BL79FI2WDZ+hGmIaghQ+vzEkFlE4lgn3fP5qzJ7k5CTitksAnO3YWNDx1IdvPtwgn/2YEOlBKE4UmV7LMFlg+mWOqWIkFSbK9j2tIqFlAzJDLw+U7IKlPt5AZt/JAolrw9HEv5NN2892l9HwnK2MZcf8AfwCHhcOJLsiOJZOTCP+ywEz2iGXzg40aIdHpcAXJP6Zk+yWj23km5S9yUjq04enD6n2gVkYuA0dNgrprDnWwSH9VgNHyDBbBtwUTsSo7kWbrXgJhk+YS3Hr3I0sCHet6wNGwcEIBdrFqMEyJOd3pFZiO9TBR0xKn76P4A85WjbttuqeXrOAGb50U4Ru/5PKB8C8111w8fd7Djdl+w+DcUjLIEv/t38zX1QAhuE2IvIG3KJTSNFFYVoyvqYbbLCZSBw1f6neAdkYwUffzMVmcagTHqHvHrHWUBgCxH2g1cdhGxKDfoztC0J4mLde64nh+f9Yb9+8YuudG9W69+mhVxhoVSxJZrJ4yNq4JJ48sDjOgYCOXbwZdfuwLs+Y5wjqLqxa9YxXRrJoVIA=="
+echo -e "\033[1;93m◈━━━━━◈◈━━━━━◈\033[0m"
+
+}
+
+
+function delete(){
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              HAPUS AKUN NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+read -p " Pengguna :" user
+
+noobzvpns --remove-user $user
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              HAPUS AKUN NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo " Pengguna : $user"
+echo " Hapus Akun Berhasil"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+}
+
+
+function renew(){
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              PERBARUI AKUN NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+read -p " Pengguna: " user
+read -p " Masa Aktif : " exp
+noobzvpns --renew-user $user --expired-user $user $exp
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              PERBARUI AKUN NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo " Pengguna : $user"
+echo " Perbarui Akun Berhasil"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+}
+
+
+
+
+function lock(){
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              LOCK AKUN NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+read -p " Pengguna : " user
+noobzvpns --block-user $user
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              LOCK AKUN NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo " Pengguna : $user"
+echo " Lock Akun Berhasil"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+}
+
+
+
+
+
+
+function show(){
+
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              MEMBER NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+noobzvpns --info-all-user | awk '/^\s*\+.*-> active/ {gsub(/(issued\(yyyymmdd\)|hash_key): [0-9a-f]+/, ""); print; getline; print; getline; getline; getline; print; print "═══════════════════"}'
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+}
+
+
+
+function unlock(){
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              UNLOCK NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+read -p " Pengguna : " user
+noobzvpns --unblock-user $user
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              UNLOCK NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo " Pengguna : $user"
+echo " Unlock Akun Berhasil"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+}
+
+
+
+function remove(){
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              HAPUS ALL MEMBER NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+
+read -p "Apakah Anda ingin menghapus semua user? (Y/N): " choice
+
+if [ "$choice" == "Y" ] || [ "$choice" == "y" ]; then
+    # Eksekusi perintah di sini
+    echo "MENGHAPUS SEMUA USER!"
+noobzvpns --remove-all-user
+elif [ "$choice" == "N" ] || [ "$choice" == "n" ]; then
+    echo "Membatalkan penghapusan."
+menu-noobzvpns
+else
+    echo "Pilihan tidak valid."
+fi
+
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              HAPUS ALL MEMBER NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo " Pengguna : $user"
+echo " Hapus All Member Berhasil"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+}
+
+
+
+
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "              MENU NOOBZVPN              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "$NC [${Lgreen}01${NC}]. BUAT AKUN NOOBZ${NC}"
+echo -e "$NC [${Lgreen}02${NC}]. HAPUS AKUN NOOBZ${NC}"
+echo -e "$NC [${Lgreen}03${NC}]. PERBARUI NOOBZ${NC}"
+echo -e "$NC [${Lgreen}04${NC}]. KUNCI AKUN NOOBZ${NC}"
+echo -e "$NC [${Lgreen}05${NC}]. BUKA AKUN NOOBZ${NC}"
+echo -e "$NC [${Lgreen}06${NC}]. DAFTAR AKUN NOOBZ${NC}"
+echo -e "$NC [${Lgreen}07${NC}]. HAPUS SEMUA AKUN NOOBZ${NC}"
+echo -e "$NC [${Lgreen}00${NC}]. ENTER UNTUK KEMBALI KE MENU${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "\033[92m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e "            🇯‌🇳‌🇸‌🇹‌🇴‌🇷‌🇪‌        "
+echo -e "\033[92m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e ""
+echo
+read -p " Select menu : " opt
+echo -e ""
+case $opt in
+01 | 1) clear ; create ;;
+02 | 2) clear ; delete ;;
+03 | 3) clear ; renew ;;
+04 | 4) clear ; lock ;;
+05 | 5) clear ; unlock ;;
+06 | 6) clear ; show ;;
+07 | 7) clear ; remove ;;
+00 | 0) clear ; menu ;;
+*) clear ; menu ;;
+esac

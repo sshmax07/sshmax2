@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# Path to the directory where account files are stored
+DIR="/var/www/html"
+
+# Function to convert bytes to gigabytes (GB)
+to_gb() {
+    local bytes=$1
+    echo "$(awk "BEGIN {printf \"%.2f\", $bytes / 1073741824}") GB"
+}
+
+# Function to convert bytes to megabytes (MB)
+to_mb() {
+    local bytes=$1
+    echo "$(awk "BEGIN {printf \"%.2f\", $bytes / 1048576}") MB"
+}
+
+# Collect a list of Trojan, VMess, and VLESS files into an array
+files=($DIR/trojan-*.txt $DIR/vmess-*.txt $DIR/vless-*.txt)
+
+# Function to display the list of accounts and their types
+tampilkan_menu() {
+    local files=("$@")
+  
+    echo "DAFTAR SEMUA AKUN:"
+    for i in "${!files[@]}"; do
+        filename=$(basename "${files[$i]}" .txt)
+        echo "  $((i + 1))) $filename"  # Displaying filename as account type
+    done
+}
+
+# Function to display account information based on user choice
+tampilkan_informasi() {
+    local files=("$@")
+    read -p "Pilih klien [1-${#files[@]}]: " pilihan
+
+    # Validate the user input
+    if [[ $pilihan =~ ^[0-9]+$ && $pilihan -ge 1 && $pilihan -le ${#files[@]} ]]; then
+        selected_file="${files[$((pilihan - 1))]}"
+        echo -e "\nInformasi Akun:"
+        cat "$selected_file"
+
+        # Extract username from the selected file
+        user=$(basename "$selected_file" .txt | cut -d '-' -f 2)
+
+        # Fetch IP limit and quota
+        iplimit=$(cat /etc/kyt/limit/vmess/ip/${user} 2>/dev/null || echo "Tidak ada data")
+        quota_in_bytes=$(cat /etc/vmess/${user} 2>/dev/null || echo "0")
+
+        # Convert quota from bytes to GB and MB
+        if [[ "$quota_in_bytes" =~ ^[0-9]+$ ]]; then
+            if (( quota_in_bytes >= 1073741824 )); then
+                Quota=$(to_gb "$quota_in_bytes")
+            else
+                Quota=$(to_mb "$quota_in_bytes")
+            fi
+        else
+            Quota="Tidak ada data"
+        fi
+
+        # Display IP limit and quota
+        echo -e "\nBatas IP     : ${iplimit} Device"
+        echo -e "Batas Kuota  : ${Quota}"
+
+        # Fetch bandwidth usage
+        byte=$(cat /etc/vmess/${user} 2>/dev/null)
+        if [[ -z "$byte" ]]; then
+            byte=0
+        fi
+        usage_quota=$(to_gb "$byte")
+
+        # Fetch limit quota
+        lim=$(cat /etc/limit/vmess/${user} 2>/dev/null)
+        if [[ -z "$lim" ]]; then
+            lim=0
+        fi
+        limit_quota=$(to_gb "$lim")
+
+        # Display usage and limit quotas
+        echo -e "\nTotal Bandwidth Usage : $usage_quota"
+        echo -e "Total Bandwidth Limit  : $limit_quota"
+
+    else
+        echo "Pilihan tidak valid!"
+    fi
+}
+
+# Check if any files were found
+if [[ ${#files[@]} -eq 0 || ! -e "${files[0]}" ]]; then
+    echo "Tidak ada file akun ditemukan!"
+    exit 1
+fi
+
+# Display menu and account information
+tampilkan_menu "${files[@]}"
+tampilkan_informasi "${files[@]}"
+
+read -p "ENTER UNTUK KEMBALI KE MENU"

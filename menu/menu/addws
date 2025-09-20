@@ -1,0 +1,289 @@
+#!/bin/bash
+
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+
+clear
+#IZIN SCRIPT
+MYIP=$(curl -sS ipv4.icanhazip.com)
+echo -e "\e[32mloading...\e[0m"
+clear
+
+# Valid Script - cek izin berdasarkan IP
+ipsaya=$(curl -sS ipv4.icanhazip.com)
+data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
+date_list=$(date +"%Y-%m-%d" -d "$data_server")
+data_ip="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
+checking_sc() {
+  useexp=$(wget -qO- $data_ip | grep $ipsaya | awk '{print $3}')
+  if [[ -z "$useexp" ]]; then
+    echo -e "${RED}Permission data not found${NC}"
+    exit 1
+  fi
+  if [[ "$date_list" < "$useexp" ]]; then
+    # permitted
+    :
+  else
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e "\033[42m          404 NOT FOUND AUTOSCRIPT          \033[0m"
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e ""
+    echo -e "            ${RED}PERMISSION DENIED !${NC}"
+    echo -e "   \033[0;33mYour VPS${NC} $ipsaya \033[0;33mHas been Banned${NC}"
+    echo -e "     \033[0;33mBuy access permissions for scripts${NC}"
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    exit 0
+  fi
+}
+checking_sc
+clear
+
+# Domain detection (fallback to $IP if set elsewhere)
+if [[ -z "$IP" ]]; then
+  if [[ -f /etc/xray/domain ]]; then
+    domain=$(cat /etc/xray/domain)
+  else
+    echo -e "${RED}Domain file /etc/xray/domain not found and \$IP not set.${NC}"
+    exit 1
+  fi
+else
+  domain=$IP
+fi
+
+# ---------------------------------------------------
+# Input username: ulangi jika kosong atau sudah ada
+# ---------------------------------------------------
+while true; do
+  clear
+  echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+  echo -e "         BUAT AKUN VMESS        "
+  echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+  echo -e "${PURPLE}◈━━━━━━━━◈◈━━━━━━━━━◈ ${NC}"
+
+  read -rp " Pengguna (User) : " user
+  # trim whitespace
+  user=$(echo "$user" | xargs)
+
+  # cek kosong
+  if [[ -z "$user" ]]; then
+    clear
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "         BUAT AKUN VMESS        "
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e " ${RED}Nama Tidak Boleh Kosong${NC}"
+    read -n 1 -s -r -p " Tekan Enter Untuk Coba Lagi"
+    continue
+  fi
+
+  # cek karakter valid
+  if [[ ! "$user" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    clear
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "         BUAT AKUN VMESS        "
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e " ${RED}Nama Tidak Valid. Hanya huruf, angka, underscore (_) yang diperbolehkan.${NC}"
+    read -n 1 -s -r -p " Tekan Enter Untuk Coba Lagi"
+    continue
+  fi
+
+  # cek apakah sudah ada di config.json
+  if grep -qw "\"email\": \"$user\"" /etc/xray/config.json 2>/dev/null; then
+    clear
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "         BUAT AKUN VMESS        "
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e " ${YELLOW}Nama '$user' sudah ada. Silakan pilih nama lain.${NC}"
+    read -n 1 -s -r -p " Tekan Enter Untuk Coba Lagi"
+    continue
+  fi
+
+  # jika lolos semua cek, keluar loop dan lanjut
+  break
+done
+
+# UUID default random jika kosong
+read -p " UUID (Kosong = Random) : " uuid
+[[ -z "$uuid" ]] && uuid=$(cat /proc/sys/kernel/random/uuid)
+
+# Fungsi untuk minta input wajib
+function input_wajib() {
+    local prompt="$1"
+    local var
+    while true; do
+        read -p "$prompt" var
+        if [ -n "$var" ]; then
+            echo "$var"
+            break
+        else
+            echo "Input tidak boleh kosong, silakan ulangi."
+        fi
+    done
+}
+
+masaaktif=$(input_wajib " Masa Aktif (Hari) : ")
+Quota=$(input_wajib " Batas Kuota (GB) : ")
+iplimit=$(input_wajib " Limit User (IP) : ")
+
+echo
+echo " Masa Aktif : $masaaktif Hari"
+echo " Batas Kuota: $Quota GB"
+echo " Limit User : $iplimit IP"
+clear
+
+tgl=$(date -d "$masaaktif days" +"%d")
+bln=$(date -d "$masaaktif days" +"%b")
+thn=$(date -d "$masaaktif days" +"%Y")
+expe="$tgl $bln, $thn"
+tgl2=$(date +"%d")
+bln2=$(date +"%b")
+thn2=$(date +"%Y")
+tnggl="$tgl2 $bln2, $thn2"
+exp=`date -d "$masaaktif days" +"%Y-%m-%d"`
+sed -i '/#vmess$/a\### '"$user $exp"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$user""'"' /etc/xray/config.json
+exp=`date -d "$masaaktif days" +"%Y-%m-%d"`
+sed -i '/#vmessgrpc$/a\### '"$user $exp"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$user""'"' /etc/xray/config.json
+
+asu=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "443",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "ws",
+      "path": "/vmess",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "tls"
+}
+EOF`
+ask=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "80",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "ws",
+      "path": "/vmess",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "none"
+}
+EOF`
+grpc=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "443",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "grpc",
+      "path": "vmess-grpc",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "tls"
+}
+EOF`
+vmess_base641=$( base64 -w 0 <<< $vmess_json1)
+vmess_base642=$( base64 -w 0 <<< $vmess_json2)
+vmess_base643=$( base64 -w 0 <<< $vmess_json3)
+vmesslink1="vmess://$(echo $asu | base64 -w 0)"
+vmesslink2="vmess://$(echo $ask | base64 -w 0)"
+vmesslink3="vmess://$(echo $grpc | base64 -w 0)"
+systemctl restart xray > /dev/null 2>&1
+service cron restart > /dev/null 2>&1
+
+if [ ! -e /etc/vmess ]; then
+  mkdir -p /etc/vmess
+fi
+
+if [[ $iplimit -gt 0 ]]; then
+mkdir -p /etc/kyt/limit/vmess/ip
+echo -e "$iplimit" > /etc/kyt/limit/vmess/ip/$user
+else
+echo > /dev/null
+fi
+
+if [ -z ${Quota} ]; then
+  Quota="0"
+fi
+
+c=$(echo "${Quota}" | sed 's/[^0-9]*//g')
+d=$((${c} * 1024 * 1024 * 1024))
+
+if [[ ${c} != "0" ]]; then
+  echo "${d}" >/etc/vmess/${user}
+fi
+DATADB=$(cat /etc/vmess/.vmess.db | grep "^###" | grep -w "${user}" | awk '{print $2}')
+if [[ "${DATADB}" != '' ]]; then
+  sed -i "/\b${user}\b/d" /etc/vmess/.vmess.db
+fi
+echo "### ${user} ${exp} ${uuid} ${Quota} ${iplimit}" >>/etc/vmess/.vmess.db
+
+# Spinner loading singkat
+clear
+sec=3
+spinner=(⣻ ⢿ ⡿ ⣟ ⣯ ⣷)
+while [ $sec -gt 0 ]; do
+  idx=$((sec % ${#spinner[@]}))
+  echo -ne " ${spinner[$idx]} Memuat data...\r"
+  sleep 1
+  sec=$((sec - 1))
+done
+clear
+
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» INFORMASI AKUN « " | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» Domain  : ${domain}" | tee -a /etc/user-create/user.log
+echo -e "» Pengguna  : ${user}"  | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» Port TLS  : 443" | tee -a /etc/user-create/user.log
+echo -e "» Port NTLS  : 80, 8080, 8880, 2082" | tee -a /etc/user-create/user.log
+echo -e "» id  : ${uuid}" | tee -a /etc/user-create/user.log
+#echo -e "» Xray Dns  : ${NS}" | tee -a /etc/user-create/user.log
+#echo -e "» Pubkey  : ${PUB}" | tee -a /etc/user-create/user.log
+echo -e "» alterId  : 0" | tee -a /etc/user-create/user.log
+echo -e "» Security  : auto" | tee -a /etc/user-create/user.log
+echo -e "» Network  : ws" | tee -a /etc/user-create/user.log
+echo -e "» Path  : /vmess/multi-path" | tee -a /etc/user-create/user.log
+#echo -e "» Patch Wildcard  : betaa.zoom.us.${domain}" | tee -a /etc/user-create/user.log
+echo -e "» ServiceName  : vmess-grpc" | tee -a /etc/user-create/user.log
+#echo -e "» Host XrayDNS : ${NS}" | tee -a /etc/user-create/user.log
+#echo -e "» Pub Key  : ${PUB}" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» VMESS TLS" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "${vmesslink1}" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» VMESS NON TLS" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "${vmesslink2}" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» VMESS GRPC" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "${vmesslink3}" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━━━━◈◈━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» Batas Ip  : $iplimit IP" | tee -a /etc/user-create/user.log
+echo -e "» Batas Kuota  : $Quota GB" | tee -a /etc/user-create/user.log
+echo -e "» Aktif Selama  : $masaaktif Hari" | tee -a /etc/user-create/user.log
+echo -e "» Tanggal Dibuat  : $tnggl" | tee -a /etc/user-create/user.log
+echo -e "» Tanggal Exp  : $expe" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━━━━◈◈━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo "" | tee -a /etc/user-create/user.log
+read -p "Enter Untuk Kembali Ke Menu"
+m-vmess

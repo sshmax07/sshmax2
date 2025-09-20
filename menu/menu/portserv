@@ -1,0 +1,215 @@
+#!/bin/bash
+# ---------------- Atur & Kelola Port Aplikasi ----------------
+
+# Fungsi helper
+ok()  { echo -e "✅ $1"; }
+err() { echo -e "❌ $1"; }
+warn(){ echo -e "⚠️ $1"; }
+
+# ---------------- Dependency Check ----------------
+function detect_pkg_manager {
+  if command -v apt >/dev/null 2>&1; then
+    echo "apt"
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "dnf"
+  elif command -v yum >/dev/null 2>&1; then
+    echo "yum"
+  else
+    echo "unknown"
+  fi
+}
+
+function check_deps {
+  local deps=("jq" "ss" "iptables")
+  local pkg_manager
+  pkg_manager=$(detect_pkg_manager)
+
+  for dep in "${deps[@]}"; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+      echo "⚠️  Dependency $dep belum ada. Menginstall..."
+      case "$pkg_manager" in
+        apt)  apt update -y && apt install -y "$dep" ;;
+        yum)  yum install -y "$dep" ;;
+        dnf)  dnf install -y "$dep" ;;
+        *)    err "Tidak bisa install $dep (package manager tidak dikenali). Silakan install manual." ;;
+      esac
+    fi
+  done
+}
+
+# ---------------- Dummy Iptables ----------------
+backup_iptables() { echo "[INFO] Backup iptables (dummy)"; }
+detect_v2ray_ports() { echo "443"; }
+apply_iptables_rules() { echo "[INFO] Apply iptables rules ke port: $*"; }
+
+# ---------------- Cek Ketersediaan Port ----------------
+function is_port_free {
+  local port=$1
+  if ss -tulpen | awk '{print $5}' | grep -q ":$port$"; then
+    err "Port $port sedang dipakai oleh service lain!"
+    if [ "$port" -eq 80 ]; then
+      warn "Peringatan: Port 80 biasanya digunakan untuk HTTP/Tunneling."
+    elif [ "$port" -eq 443 ]; then
+      warn "Peringatan: Port 443 biasanya digunakan untuk HTTPS/Tunneling."
+    fi
+    return 1
+  fi
+  return 0
+}
+
+# ---------------- Xray Port Detection ----------------
+function get_xray_ports {
+  ports=$(ss -tulpen | grep -w xray | awk '{print $5}' | awk -F: '{print $NF}' | sort -u)
+  if [ -n "$ports" ]; then
+    port_list=$(echo "$ports" | head -n 5 | tr '\n' ',' | sed 's/,$//')
+    total=$(echo "$ports" | wc -l)
+    if [ "$total" -gt 5 ]; then
+      echo "$port_list ..."
+    else
+      echo "$port_list"
+    fi
+  else
+    echo "(tidak aktif)"
+  fi
+}
+
+# ---------------- Info Port Aktif ----------------
+function show_current_ports {
+  clear
+  echo "=== Informasi Port Aktif ==="
+
+  # SSHD
+  ssh_port=$(grep -E "^#?Port " /etc/ssh/sshd_config | awk '{print $2}' | tail -n1)
+  [ -z "$ssh_port" ] && ssh_port="22"
+  echo "🔹 SSHD     : $ssh_port"
+
+  # Dropbear
+  if [ -f /etc/default/dropbear ]; then
+    drop_port=$(grep "^DROPBEAR_PORT=" /etc/default/dropbear | cut -d= -f2)
+    [ -z "$drop_port" ] && drop_port="(default 22 / tidak terdeteksi)"
+    echo "🔹 Dropbear : $drop_port"
+  fi
+
+  # Nginx
+  if [ -f /etc/nginx/sites-enabled/default ]; then
+    nginx_port=$(grep -m1 "listen " /etc/nginx/sites-enabled/default | awk '{print $2}' | tr -d ';')
+    [ -z "$nginx_port" ] && nginx_port="(tidak terdeteksi)"
+    echo "🔹 Nginx    : $nginx_port"
+  fi
+
+  # HAProxy
+  if [ -f /etc/haproxy/haproxy.cfg ]; then
+    haproxy_port=$(grep -m1 "bind \*:" /etc/haproxy/haproxy.cfg | sed 's/.*:\([0-9]\+\).*/\1/')
+    [ -z "$haproxy_port" ] && haproxy_port="(tidak terdeteksi)"
+    echo "🔹 HAProxy  : $haproxy_port"
+  fi
+
+  # Xray
+  echo "🔹 Xray     : $(get_xray_ports)"
+
+  echo "================================"
+  echo
+  echo "=== Deteksi Port Bentrok ==="
+  conflicts=$(ss -tulpen | grep LISTEN | awk '{print $5}' | sed 's/.*://g' | sort | uniq -c | awk '$1>1 {print $2}')
+  if [ -z "$conflicts" ]; then
+    echo "✅ Tidak ada port bentrok."
+  else
+    for p in $conflicts; do
+      count=$(ss -tulpen | grep -w ":$p" | wc -l)
+      echo "⚠ Port $p dipakai $count service:"
+      ss -tulpen | grep -w ":$p"
+      if [ "$p" -eq 80 ]; then warn "Peringatan: Port 80 biasanya untuk HTTP/Tunneling."; fi
+      if [ "$p" -eq 443 ]; then warn "Peringatan: Port 443 biasanya untuk HTTPS/Tunneling."; fi
+      echo
+    done
+  fi
+  echo "============================"
+}
+
+# ---------------- Menu Atur & Info Port ----------------
+function set_port_app {
+  while true; do
+    clear
+    echo "=== Menu Atur & Info Port Aplikasi ==="
+    echo "1) Ubah Port SSHD"
+    echo "2) Ubah Port Dropbear"
+    echo "3) Ubah Port Nginx"
+    echo "4) Ubah Port HAProxy"
+    echo "5) Ubah Port Xray"
+    echo "6) Info Port Aplikasi (cek konflik)"
+    echo "0) Keluar"
+    read -r -p "Pilih menu [0-6]: " app
+
+    case $app in
+      1)
+        clear
+        read -p "Masukkan port baru untuk SSHD: " newport
+        if is_port_free "$newport"; then
+          sed -i "s/^#\?Port .*/Port $newport/" /etc/ssh/sshd_config || echo "Port $newport" >> /etc/ssh/sshd_config
+          systemctl restart sshd && ok "SSHD diganti ke port $newport"
+        fi
+        read -n 1 -s -r -p "Tekan tombol apapun untuk kembali..."
+        ;;
+      2)
+        clear
+        read -p "Masukkan port baru untuk Dropbear: " newport
+        if is_port_free "$newport"; then
+          sed -i "s/^DROPBEAR_PORT=.*/DROPBEAR_PORT=$newport/" /etc/default/dropbear
+          systemctl restart dropbear && ok "Dropbear diganti ke port $newport"
+        fi
+        read -n 1 -s -r -p "Tekan tombol apapun untuk kembali..."
+        ;;
+      3)
+        clear
+        read -p "Masukkan port baru untuk Nginx: " newport
+        if is_port_free "$newport"; then
+          sed -i "s/listen .*/listen $newport;/" /etc/nginx/sites-enabled/default
+          nginx -t && systemctl restart nginx && ok "Nginx diganti ke port $newport"
+        fi
+        read -n 1 -s -r -p "Tekan tombol apapun untuk kembali..."
+        ;;
+      4)
+        clear
+        read -p "Masukkan port baru untuk HAProxy: " newport
+        if is_port_free "$newport"; then
+          sed -i "s/bind \*:.*$/bind \*:$newport/" /etc/haproxy/haproxy.cfg
+          systemctl restart haproxy && ok "HAProxy diganti ke port $newport"
+        fi
+        read -n 1 -s -r -p "Tekan tombol apapun untuk kembali..."
+        ;;
+      5)
+        clear
+        read -p "Masukkan port baru untuk Xray: " newport
+        if is_port_free "$newport"; then
+          if [ -f /etc/xray/config.json ]; then
+            if command -v jq >/dev/null 2>&1; then
+              jq ".inbounds[0].port=$newport" /etc/xray/config.json > /etc/xray/config.tmp && mv /etc/xray/config.tmp /etc/xray/config.json
+              systemctl restart xray && ok "Xray diganti ke port $newport"
+            else
+              err "jq belum terinstall. Jalankan: apt install jq -y"
+            fi
+          else
+            err "Config Xray tidak ditemukan"
+          fi
+        fi
+        read -n 1 -s -r -p "Tekan tombol apapun untuk kembali..."
+        ;;
+      6)
+        show_current_ports
+        read -n 1 -s -r -p "Tekan tombol apapun untuk kembali..."
+        ;;
+      0) clear; echo "Keluar..."; break ;;
+      *) err "Pilihan tidak valid!"; sleep 1 ;;
+    esac
+
+    # Sinkron iptables setelah perubahan
+    backup_iptables
+    read -r -a PORTS <<< "$(detect_v2ray_ports)"
+    [ ${#PORTS[@]} -eq 0 ] && PORTS=(443)
+    apply_iptables_rules "${PORTS[@]}"
+  done
+}
+
+# ---------------- Main ----------------
+check_deps
+set_port_app

@@ -1,0 +1,131 @@
+#!/bin/bash
+# uninstall-antiddos.sh
+# Uninstall Anti-DDoS (ddos-deflate + iptables rules + whitelist) sesuai install-antiddos.sh
+set -euo pipefail
+
+BACKUP_DIR="/root/antiddos-backups"
+DDOS_DIR="/usr/local/ddos"
+DDOS_BIN="/usr/local/sbin/ddos"
+WHITELIST_FILE="/etc/antiddos.whitelist"
+
+NC='\033[0m'; GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'
+function info { echo -e "${YELLOW}[INFO]${NC} $*"; }
+function ok   { echo -e "${GREEN}[OK]${NC} $*"; }
+function err  { echo -e "${RED}[ERR]${NC} $*"; }
+
+require_root() { if [ "$(id -u)" -ne 0 ]; then err "Harus root! Jalankan sebagai root."; exit 1; fi; }
+
+find_latest_backup() {
+  if [ -d "$BACKUP_DIR" ]; then
+    # mencari file iptables-before-*.v4 paling baru
+    local latest
+    latest=$(ls -1t "${BACKUP_DIR}"/iptables-before-*.v4 2>/dev/null | head -n1 || true)
+    printf "%s" "$latest"
+  fi
+}
+
+remove_cron_ddos() {
+  # hapus cron yang menjalankan ddos.sh
+  local before
+  before=$(crontab -l 2>/dev/null || true)
+  if echo "$before" | grep -q '/usr/local/ddos/ddos.sh'; then
+    echo "$before" | grep -v '/usr/local/ddos/ddos.sh' | crontab - || true
+    ok "Cron ddos-deflate dihapus dari crontab."
+  else
+    info "Tidak menemukan cron ddos-deflate di crontab."
+  fi
+}
+
+restore_iptables_from_backup() {
+  local backup_file="$1"
+  if [ -n "$backup_file" ] && [ -f "$backup_file" ]; then
+    info "Mencoba restore iptables dari backup: $backup_file"
+    if command -v iptables-restore >/dev/null 2>&1; then
+      iptables-restore < "$backup_file"
+      ok "iptables restore sukses dari $backup_file"
+      # juga salin ke rules.v4 untuk iptables-persistent jika ada
+      if mkdir -p /etc/iptables 2>/dev/null || true; then
+        cp -f "$backup_file" /etc/iptables/rules.v4 2>/dev/null || true
+        cp -f "$backup_file" /etc/iptables/rules.v4 2>/dev/null || true
+      fi
+      if [ -x /usr/sbin/netfilter-persistent ] || [ -x /usr/bin/netfilter-persistent ]; then
+        netfilter-persistent save 2>/dev/null || true
+        netfilter-persistent reload 2>/dev/null || true
+      fi
+    else
+      err "iptables-restore tidak ditemukan. Mencoba iptables-save restore alternatif."
+      iptables -F; iptables -X; iptables -t nat -F; iptables -t mangle -F
+      ok "Aturan iptables di-flush; tetapi iptables-restore tidak tersedia."
+    fi
+  else
+    info "Backup iptables tidak tersedia. Akan flush aturan iptables dan set policy ACCEPT agar tidak terkunci."
+    iptables -F || true
+    iptables -X || true
+    iptables -t nat -F || true
+    iptables -t mangle -F || true
+    iptables -P INPUT ACCEPT || true
+    iptables -P FORWARD ACCEPT || true
+    iptables -P OUTPUT ACCEPT || true
+    ok "iptables di-flush dan policy di-set ke ACCEPT."
+    # Simpan juga agar persistent (jika tool ada)
+    if command -v netfilter-persistent >/dev/null 2>&1; then
+      netfilter-persistent save 2>/dev/null || true
+      ok "Saved empty iptables rules to persistent store."
+    elif [ -d /etc/iptables ]; then
+      iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+    fi
+  fi
+}
+
+remove_ddos_files() {
+  if [ -f "$DDOS_BIN" ]; then
+    rm -f "$DDOS_BIN" && ok "Menghapus binary ddos: $DDOS_BIN"
+  else
+    info "Binary ddos tidak ditemukan di $DDOS_BIN"
+  fi
+  if [ -d "$DDOS_DIR" ]; then
+    rm -rf "$DDOS_DIR" && ok "Menghapus direktori ddos-deflate: $DDOS_DIR"
+  else
+    info "Direktori ddos-deflate tidak ditemukan di $DDOS_DIR"
+  fi
+}
+
+remove_whitelist() {
+  if [ -f "$WHITELIST_FILE" ]; then
+    rm -f "$WHITELIST_FILE" && ok "Menghapus whitelist file: $WHITELIST_FILE"
+  else
+    info "File whitelist tidak ditemukan: $WHITELIST_FILE"
+  fi
+}
+
+main() {
+  require_root
+  info "Mulai uninstall Anti-DDoS..."
+
+  remove_cron_ddos
+
+  # cari backup terakhir
+  local latest_backup
+  latest_backup=$(find_latest_backup)
+  if [ -n "$latest_backup" ] && [ -f "$latest_backup" ]; then
+    info "Backup iptables otomatis ditemukan: $latest_backup"
+    restore_iptables_from_backup "$latest_backup"
+  else
+    info "Tidak ada backup iptables otomatis yang ditemukan di $BACKUP_DIR."
+    restore_iptables_from_backup ""
+  fi
+
+  remove_ddos_files
+  remove_whitelist
+
+  # optionally remove iptables-persistent packages? kita hanya reload/save
+  if command -v netfilter-persistent >/dev/null 2>&1; then
+    info "Reload netfilter-persistent (jika ada)."
+    netfilter-persistent reload 2>/dev/null || true
+  fi
+
+  ok "Uninstall Anti-DDoS selesai."
+  info "Periksa konektivitas SSH/port lain. Jika perlu, periksa file backup di $BACKUP_DIR"
+}
+
+main "$@"

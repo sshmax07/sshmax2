@@ -1,0 +1,156 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+yell='\e[33m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+clear
+ipsaya=$(curl -sS ipv4.icanhazip.com)
+data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
+date_list=$(date +"%Y-%m-%d" -d "$data_server")
+data_ip="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
+checking_sc() {
+  useexp=$(wget -qO- $data_ip | grep $ipsaya | awk '{print $3}')
+  if [[ $date_list < $useexp ]]; then
+    echo -ne
+  else
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e "\033[42m          404 NOT FOUND AUTOSCRIPT          \033[0m"
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e ""
+    echo -e "            ${RED}PERMISSION DENIED !${NC}"
+    echo -e "   \033[0;33mYour VPS${NC} $ipsaya \033[0;33mHas been Banned${NC}"
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    exit 0
+  fi
+}
+checking_sc
+clear
+
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "                     MENU SYSTEM              "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "$NC   [${Lgreen}01${NC}]. INSTALL NOOBZVPN    $NC[${Lgreen}09${NC}]. REBOOT VPS"
+echo -e "$NC   [${Lgreen}02${NC}]. INSTALL UDP CUSTOM  $NC[${Lgreen}10${NC}]. RENEW DOMAIN"
+echo -e "$NC   [${Lgreen}03${NC}]. INSTALL SLOWDNS     $NC[${Lgreen}11${NC}]. BERSIHKAN CACHE"
+echo -e "$NC   [${Lgreen}04${NC}]. MENU AUTO REBOOT    $NC[${Lgreen}12${NC}]. RUNNING"
+echo -e "$NC   [${Lgreen}05${NC}]. MENU SPEEDTES$NC       $NC[${Lgreen}13${NC}]. LOG ACCOUNT"
+echo -e "$NC   [${Lgreen}06${NC}]. MENU BOT TELEGRAM   $NC[${Lgreen}14${NC}]. FIX CERT SSL"
+echo -e "$NC   [${Lgreen}07${NC}]. CHANGE BANNER       $NC[${Lgreen}15${NC}]. DELL USER EXP"
+echo -e "$NC   [${Lgreen}08${NC}]. WAKTU REBOOT        $NC[${Lgreen}16${NC}]. DDOS MANAGER"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "                   🇯‌🇳‌🇸‌🇹‌🇴‌🇷‌🇪‌        "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -p " MENU : " opt
+echo -e ""
+case $opt in
+1 | 01)
+git clone https://github.com/noobz-id/noobzvpns.git
+cd noobzvpns/
+./install.sh
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-system
+;;
+2 | 02)
+clear
+udp
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-system
+;;
+3 | 03)
+clear
+wget -q -O /tmp/nameserver "https://raw.githubusercontent.com/sshmax07/sshmax2/main/slowdns/nameserver" >/dev/null 2>&1
+chmod +x /tmp/nameserver
+bash /tmp/nameserver | tee /root/install.log
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-system
+;;
+4 | 04)
+clear
+autoreboot
+;;
+5 | 05)
+clear
+speedtest
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-system
+;;
+6 | 06)
+clear
+m-bot
+;;
+7 | 07)
+clear
+nano /etc/kyt.txt
+;;
+8 | 08)
+clear
+jam
+;;
+9 | 09)
+clear
+reboot
+;;
+10 | 010)
+clear
+addhost
+;;
+11 | 011)
+clear
+clearcache
+;;
+12 | 012)
+clear
+run
+;;
+13 | 013)
+clear
+cat /etc/user-create/user.log
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-system
+;;
+14 | 014)
+clear
+fixcert
+;;
+15 | 015)
+clear
+delexp
+echo ""
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-system
+;;
+16 | 016)
+clear
+ddosmanager
+;;
+17 | 017)
+clear
+dafakun
+echo ""
+0 | 00)
+menu
+;;
+x)
+menu
+;;
+*) clear ;
+echo -e
+menu
+;;
+esac
+clear

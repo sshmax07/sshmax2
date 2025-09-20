@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Color
+RED='\033[0;31m'
+NC='\033[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+LIGHT='\033[0;37m'
+BGWHITE='\e[0;100;37m'
+clear
+
+NUMBER_OF_CLIENTS=$(grep -c -E "^#& " "/etc/xray/config.json")
+	if [[ ${NUMBER_OF_CLIENTS} == '0' ]]; then
+		echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+        echo -e "       HAPUS AKUN VLESS      "
+        echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+		echo "Tidak Ada Akun"
+		echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+		read -n 1 -s -r -p "Enter Untuk Kembali Ke Menu"
+        m-vless
+	fi
+
+	clear
+	echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "       HAPUS AKUN VLESS      "
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo "  Pengguna       Expired  " 
+	echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+	grep -E "^#& " "/etc/xray/config.json" | cut -d ' ' -f 2-3 | column -t | sort | uniq
+    echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+	read -rp " Pengguna : " user
+    if [ -z $user ]; then
+    m-vless
+    else
+    exp=$(grep -wE "^#& $user" "/etc/xray/config.json" | cut -d ' ' -f 3 | sort | uniq)
+    sed -i "/^#& $user $exp/,/^},{/d" /etc/xray/config.json
+    sed -i "/^#& $user $exp/,/^},{/d" /etc/vless/.vless.db
+    rm -rf /etc/vless/$user
+    rm -rf /etc/kyt/limit/vless/ip/$user
+    systemctl restart xray > /dev/null 2>&1
+    clear
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "       AKUN BERHASIL DIHAPUS         "
+    echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo " Pengguna : $user"
+    echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+    echo ""
+    read -n 1 -s -r -p "Enter Untuk Kembali Ke Menu"
+        m-vless
+    fi

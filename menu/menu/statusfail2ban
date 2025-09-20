@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# check-fail2ban.sh
+# Cek apakah Fail2Ban terpasang dan servicenya berjalan.
+# Keluar dengan kode 0 jika terpasang + running, 1 sebaliknya.
+
+set -euo pipefail
+
+# Fungsi bantu untuk menampilkan hasil
+info()  { echo -e "[INFO]  $*"; }
+ok()    { echo -e "Terpasang"; exit 0; }
+fail()  { echo -e "Tidak terpasang"; exit 1; }
+
+# 1) Cek apakah binari tersedia (fail2ban-client)
+if ! command -v fail2ban-client >/dev/null 2>&1; then
+  # Mungkin terpasang via paket tapi PATH tidak ditemukan — coba cek paket manager (opsional)
+  # Cukup tampilkan tidak terpasang
+  info "fail2ban-client tidak ditemukan di PATH."
+  fail
+fi
+
+info "fail2ban-client ditemukan."
+
+# 2) Cek apakah service benar-benar berjalan
+# Cara yang andal: gunakan fail2ban-client ping (mengembalikan OK jika daemon running)
+if fail2ban-client ping >/dev/null 2>&1; then
+  info "Fail2Ban daemon merespons (running)."
+  ok
+fi
+
+# Jika ping gagal, coba metode fallback:
+# - systemctl (systemd)
+# - service / init.d
+# - cek proses fail2ban-server
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl is-active --quiet fail2ban; then
+    info "systemctl: service fail2ban aktif."
+    ok
+  else
+    info "systemctl: service fail2ban tidak aktif."
+  fi
+fi
+
+if command -v service >/dev/null 2>&1; then
+  if service fail2ban status >/dev/null 2>&1; then
+    info "service: fail2ban dilaporkan aktif."
+    ok
+  else
+    info "service: fail2ban dilaporkan tidak aktif."
+  fi
+fi
+
+# Cek proses langsung
+if pgrep -x "fail2ban-server" >/dev/null 2>&1 || pidof fail2ban-server >/dev/null 2>&1; then
+  info "Proses fail2ban-server ditemukan berjalan (fallback)."
+  ok
+fi
+
+# Jika sampai sini berarti terpasang (ada client) tapi daemon tidak berjalan
+echo "Terpasang tetapi service Fail2Ban tidak berjalan."
+exit 1

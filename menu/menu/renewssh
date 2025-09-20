@@ -1,0 +1,78 @@
+#!/bin/bash
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+yell='\e[33m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+PURPLE='\033[35m'
+Lgreen='\033[92m'
+clear
+# Getting
+MYIP=$(wget -qO- ipinfo.io/ip);
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           DAFTAR AKUN SSH                  "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo "      PENGGUNA          DATA EXP          "
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+while read expired
+do
+AKUN="$(echo $expired | cut -d: -f1)"
+ID="$(echo $expired | grep -v nobody | cut -d: -f3)"
+exp="$(chage -l $AKUN | grep "Account expires" | awk -F": " '{print $2}')"
+status="$(passwd -S $AKUN | awk '{print $2}' )"
+if [[ $ID -ge 1000 ]]; then
+if [[ "$status" = "L" ]]; then
+printf "%-17s %2s %-17s %2s \n" "  $AKUN"  "     $exp   "
+else
+printf "%-17s %2s %-17s %2s \n" "  $AKUN"  "     $exp   "
+fi
+fi
+done < /etc/passwd
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━◈◈━━━━◈ ${NC}"
+read -p " Pengguna  : " User
+egrep "^$User" /etc/passwd >/dev/null
+if [ $? -eq 0 ]; then
+read -p " Tambahan Hari : " Days
+Today=`date +%s`
+Days_Detailed=$(( $Days * 86400 ))
+Expire_On=$(($Today + $Days_Detailed))
+Expiration=$(date -u --date="1970-01-01 $Expire_On sec GMT" +%Y/%m/%d)
+Expiration_Display=$(date -u --date="1970-01-01 $Expire_On sec GMT" '+%d %b %Y')
+passwd -u $User
+usermod -e  $Expiration $User
+egrep "^$User" /etc/passwd >/dev/null
+echo -e "$Pass\n$Pass\n"|passwd $User &> /dev/null
+clear
+echo -e "${Lgreen}◈━━━━━━━━━◈◈━━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "  » AKUN BERHASIL DIPERBARUI «           "
+echo -e "${Lgreen}◈━━━━━━━━━◈◈━━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "${PURPLE}◈━━━━━━━━━◈◈━━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "  » Domain  : $(cat /etc/xray/domain)"
+echo -e "  » Pengguna  : $User"
+echo -e "  » Tambahan hari  : $Days Days"
+echo -e "  » Tanggal exp  :  $Expiration_Display"
+echo -e "${PURPLE}◈━━━━━━━━━◈◈━━━━━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e ""
+read -n 1 -s -r -p "ENTER UNTUK KEMBALI KE MENU"
+menu
+
+else
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "        PERBARUI AKUN SSH             "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+echo -e "   Username Tidak Ditemukan      "
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p "ENTER UNTUK KEMBALI KE MENU"
+menu
+fi

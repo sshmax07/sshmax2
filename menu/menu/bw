@@ -1,0 +1,213 @@
+#!/bin/bash
+
+MYIP=$(wget -qO- ipinfo.io/ip);
+echo "Checking VPS"
+# Color
+RED='\033[0;31m'
+NC='\033[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+BLUE='\033[0;34m'
+YELL='\033[0;33m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+LIGHT='\033[0;37m'
+BGWHITE='\e[0;100;37m'
+
+clear 
+echo -e ""
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           BANDWITH MONITOR            "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}01${NC}]${YELL} Lihat Total Bandwith Tersisa${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}02${NC}]${YELL} Tabel Penggunaan Setiap 5 Menit${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}03${NC}]${YELL} Tabel Penggunaan Setiap Jam${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}04${NC}]${YELL} Tabel Penggunaan Setiap Hari${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}05${NC}]${YELL} Tabel Penggunaan Setiap Bulan${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}06${NC}]${YELL} Tabel Penggunaan Setiap Tahun${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}07${NC}]${YELL} Tabel Penggunaan Tertinggi${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}08${NC}]${YELL} Statistik Penggunaan Setiap Jam${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}09${NC}]${YELL} Lihat Penggunaan Aktif Saat Ini${NC}"
+echo -e " ${NC}   ${NC}[${GREEN}10${NC}]${YELL} Lihat Trafik Penggunaan Aktif Saat Ini [5s]${NC}"
+echo -e " ${NC}   ${NC}[${RED}0X${NC}]${RED} ComeBack Menu${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -p " MENU : " opt
+
+case $opt in
+1)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           TOTAL BANDWITH SERVER TERSISA "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+2)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           TOTAL BANDWITH SETIAP 5 MENIT"
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -5
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+3)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           TOTAL BANDWITH SETIAP JAM"
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -h
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+4)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           TOTAL BANDWITH SETIAP HARI "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -d
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+5)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           TOTAL BANDWITH SETIAP BULAN "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -m
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+6)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           TOTAL BANDWITH SETIAP TAHUN"
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -y
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+7)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           TOTAL BANDWITH TERTINGGI "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -t
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+8)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           STATISTIK TERPAKAI SETIAP JAM "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -hg
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+9)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           LIVE BANDWITH SAAT INI "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "Press [ Ctrl+C ] » To-Exit"
+echo -e ""
+
+vnstat -l
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+10)
+clear 
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "           LIVE TRAFIK PENGGUNAAN BANDWITH"
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+
+vnstat -tr
+
+echo -e ""
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -n 1 -s -r -p " ENTER UNTUK KEMBALI KE MENU"
+bw
+;;
+
+0 | 00 | x | X | 0x | 0X)
+sleep 1
+menu
+;;
+
+*)
+echo -e ""
+echo -e "  Anda Salah Tekan"
+sleep 1
+bw
+;;
+esac

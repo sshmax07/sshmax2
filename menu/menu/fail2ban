@@ -1,0 +1,242 @@
+#!/bin/bash
+# Install & configure Fail2Ban + jail.d + filter.d + auto-fix + watchdog
+# Supports: sshd, dropbear, haproxy, xray (v2ray), nginx
+# Usage: sudo ./install-antiddos-fail2ban.sh
+
+set -euo pipefail
+
+# ---------- Variables ----------
+BACKUP_DIR="/root/antiddos-backups"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+JAIL_CONF="/etc/fail2ban/jail.d/custom.conf"
+FILTER_DIR="/etc/fail2ban/filter.d"
+SQLITE_DB="/var/lib/fail2ban/fail2ban.sqlite3"
+
+# ---------- Helpers ----------
+require_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "[ERROR] Script harus dijalankan sebagai root. Gunakan sudo."
+        exit 1
+    fi
+}
+
+apt_install() {
+    if command -v apt >/dev/null 2>&1; then
+        apt update
+        DEBIAN_FRONTEND=noninteractive apt install -y fail2ban >/dev/null
+    else
+        echo "[WARN] apt tidak ditemukan. Install fail2ban manual."
+    fi
+}
+
+# ---------- Backup ----------
+backup_configs() {
+    echo "[INFO] Backup konfigurasi lama..."
+    mkdir -p "$BACKUP_DIR"
+    if [ -d /etc/fail2ban ]; then
+        cp -a /etc/fail2ban "$BACKUP_DIR/fail2ban-$TIMESTAMP" || true
+        echo "[OK] Backup saved: $BACKUP_DIR/fail2ban-$TIMESTAMP"
+    fi
+    if [ -f "$SQLITE_DB" ]; then
+        mkdir -p "$BACKUP_DIR/db"
+        cp -a "$SQLITE_DB" "$BACKUP_DIR/db/fail2ban.sqlite3-$TIMESTAMP" || true
+    fi
+}
+
+# ---------- Install ----------
+install_fail2ban() {
+    echo "[INFO] Install Fail2Ban (if missing)..."
+    if ! command -v fail2ban-server >/dev/null 2>&1; then
+        apt_install
+    else
+        echo "[INFO] Fail2Ban sudah terinstall."
+    fi
+    systemctl enable --now fail2ban || true
+}
+
+# ---------- Jail local ----------
+setup_jail_local() {
+    echo "[INFO] Menulis jail local -> $JAIL_CONF"
+    mkdir -p "$(dirname "$JAIL_CONF")"
+
+    cat > "$JAIL_CONF" <<'EOF'
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1
+bantime  = 86400       # blokir 24 jam
+findtime = 600         # window 10 menit
+maxretry = 5
+
+[sshd]
+enabled  = true
+port     = ssh
+filter   = sshd
+logpath  = /var/log/auth.log
+
+[dropbear]
+enabled  = true
+port     = ssh
+filter   = dropbear
+logpath  = /var/log/auth.log
+
+[haproxy-http-auth]
+enabled  = true
+filter   = haproxy-http-auth
+port     = http,https
+logpath  = /var/log/haproxy.log
+
+[xray]
+enabled  = true
+filter   = xray
+port     = 80,443,8880
+logpath  = /var/log/xray/access.log
+
+[nginx-http-auth]
+enabled  = true
+filter   = nginx-http-auth
+port     = http,https
+logpath  = /var/log/nginx/error.log
+EOF
+
+    echo "[OK] Jail local ditulis."
+}
+
+# ---------- Filters ----------
+setup_filters() {
+    echo "[INFO] Menulis filter tambahan ke $FILTER_DIR"
+    mkdir -p "$FILTER_DIR"
+
+    # Dropbear filter
+    cat > "$FILTER_DIR/dropbear.conf" <<'EOF'
+[Definition]
+failregex = ^.*Bad password attempt for .* from <HOST>.*$
+            ^.*Login attempt for nonexistent user .* from <HOST>.*$
+            ^.*Authentication failed.*<HOST>.*$
+ignoreregex =
+EOF
+
+    # HAProxy HTTP auth
+    cat > "$FILTER_DIR/haproxy-http-auth.conf" <<'EOF'
+[Definition]
+failregex = ^\w+ \[.*\] .* ".*" 401 .* <HOST> .*
+ignoreregex =
+EOF
+
+    # Xray / V2Ray patterns
+    cat > "$FILTER_DIR/xray.conf" <<'EOF'
+[Definition]
+failregex = ^.*\[<HOST>\].*rejected.*$
+            ^.*\[<HOST>\].*authentication failed.*$
+            ^.*<HOST>:\d+ - .*authentication failed.*$
+ignoreregex =
+EOF
+
+    # Nginx HTTP auth brute-force (401 Unauthorized)
+    cat > "$FILTER_DIR/nginx-http-auth.conf" <<'EOF'
+[Definition]
+failregex = ^.*:.* \[error\] .* user .* authentication failure.* client: <HOST>.*$
+            ^.* \[error\] .* open user .* failed.* client: <HOST>.*$
+            ^.* "POST .*" 401 .* <HOST> .*
+ignoreregex =
+EOF
+
+    echo "[OK] Filters siap."
+}
+
+# ---------- Auto-fix restart ----------
+attempt_autofix() {
+    echo "[INFO] Mencoba auto-fix untuk Fail2Ban..."
+    if [ -f "$SQLITE_DB" ]; then
+        mkdir -p "$BACKUP_DIR/db"
+        mv "$SQLITE_DB" "$BACKUP_DIR/db/fail2ban.sqlite3-$TIMESTAMP" || true
+        echo "[INFO] fail2ban DB dipindah ke backup dan akan direcreate."
+    fi
+    systemctl restart fail2ban || true
+    sleep 2
+    if systemctl is-active --quiet fail2ban; then
+        echo "[FIXED] Fail2Ban berhasil dijalankan setelah auto-fix."
+        return 0
+    else
+        echo "[ERROR] Auto-fix gagal. Periksa log: journalctl -u fail2ban -e"
+        return 1
+    fi
+}
+
+restart_with_autofix() {
+    echo "[INFO] Restart Fail2Ban..."
+    systemctl restart fail2ban || true
+    sleep 2
+    if systemctl is-active --quiet fail2ban; then
+        echo "[OK] Fail2Ban aktif."
+    else
+        echo "[WARN] Fail2Ban tidak aktif, mencoba auto-fix..."
+        attempt_autofix || true
+    fi
+}
+
+# ---------- Watchdog (systemd timer) ----------
+setup_autocheck() {
+    echo "[INFO] Membuat watchdog systemd untuk Fail2Ban..."
+
+    # Service
+    cat > /etc/systemd/system/fail2ban-watchdog.service <<'EOF'
+[Unit]
+Description=Watchdog: Auto-restart Fail2Ban jika mati
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'if ! systemctl is-active --quiet fail2ban; then systemctl restart fail2ban; fi'
+EOF
+
+    # Timer
+    cat > /etc/systemd/system/fail2ban-watchdog.timer <<'EOF'
+[Unit]
+Description=Timer untuk Fail2Ban Watchdog
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+Unit=fail2ban-watchdog.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now fail2ban-watchdog.timer
+    echo "[OK] Watchdog aktif (cek tiap 5 menit)."
+}
+
+# ---------- Post-setup checks ----------
+post_checks() {
+    echo
+    echo "=== Verifikasi Fail2Ban ==="
+    if command -v fail2ban-client >/dev/null 2>&1; then
+        fail2ban-client status || true
+        echo "Cek jail sshd: fail2ban-client status sshd"
+        echo "Cek jail dropbear: fail2ban-client status dropbear"
+        echo "Cek jail xray: fail2ban-client status xray"
+        echo "Cek jail haproxy: fail2ban-client status haproxy-http-auth"
+        echo "Cek jail nginx: fail2ban-client status nginx-http-auth"
+    else
+        echo "[WARN] fail2ban-client tidak tersedia."
+    fi
+    echo "Jika Fail2Ban masih bermasalah: journalctl -u fail2ban -e"
+    echo
+}
+
+# ---------- Main ----------
+main() {
+    require_root
+    backup_configs
+    install_fail2ban
+    setup_jail_local
+    setup_filters
+    restart_with_autofix
+    setup_autocheck
+    post_checks
+    echo "[DONE] Setup Fail2Ban selesai."
+    echo "Catatan: pastikan aplikasi (xray/haproxy/nginx) menulis log ke path yang didefinisikan di jail."
+}
+
+main "$@"

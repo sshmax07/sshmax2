@@ -1,0 +1,104 @@
+#!/bin/bash
+# Hapus Semua Akun VMess, Trojan, dan VLESS Expired Otomatis (SSH dihapus)
+
+# ===== CONFIG =====
+VMESS_DB="/etc/vmess/.vmess.db"
+TROJAN_DB="/etc/trojan/.trojan.db"
+VLESS_DB="/etc/vless/.vless.db"
+CONFIG_FILE="/etc/xray/config.json"
+TODAY=$(date +"%Y-%m-%d")
+
+# Warna
+RED="\e[31;1m"
+GREEN="\e[92;1m"
+YELLOW="\e[33m"
+NC="\e[0m"
+
+# Ambil domain
+domain=$(cat /etc/xray/domain 2>/dev/null)
+[ -z "$domain" ] && domain=$(hostname)
+
+clear
+echo -e "${YELLOW}=== Mulai Proses Hapus Semua Akun Expired ===${NC}"
+
+# ===== HAPUS VMESS =====
+if [ -f "$VMESS_DB" ]; then
+    expired_vmess=()
+    while read -r line; do
+        [[ $line != "###"* ]] && continue
+        user=$(echo $line | awk '{print $2}')
+        exp=$(echo $line | awk '{print $3}')
+        [[ "$exp" < "$TODAY" ]] && expired_vmess+=("$user")
+    done < "$VMESS_DB"
+
+    if [ ${#expired_vmess[@]} -gt 0 ]; then
+        echo -e "${RED}Menghapus akun VMess expired...${NC}"
+        for user in "${expired_vmess[@]}"; do
+            echo -e " - $user"
+            [ -f /etc/vmess/$user ] && rm -f /etc/vmess/$user
+            sed -i "/### $user/d" "$CONFIG_FILE"
+            sed -i "/### $user/d" "$VMESS_DB"
+        done
+        echo -e "${GREEN}Selesai menghapus akun VMess expired.${NC}"
+    else
+        echo "Tidak ada akun VMess yang expired."
+    fi
+fi
+
+# ===== HAPUS TROJAN =====
+if [ -f "$TROJAN_DB" ]; then
+    expired_trojan=()
+    while read -r line; do
+        [[ $line != "###"* ]] && continue
+        user=$(echo $line | awk '{print $2}')
+        exp=$(echo $line | awk '{print $3}')
+        [[ "$exp" < "$TODAY" ]] && expired_trojan+=("$user")
+    done < "$TROJAN_DB"
+
+    if [ ${#expired_trojan[@]} -gt 0 ]; then
+        echo -e "${RED}Menghapus akun Trojan expired...${NC}"
+        for user in "${expired_trojan[@]}"; do
+            echo -e " - $user"
+            [ -f /etc/trojan/$user ] && rm -f /etc/trojan/$user
+            sed -i "/### $user/d" "$CONFIG_FILE"
+            sed -i "/### $user/d" "$TROJAN_DB"
+        done
+        echo -e "${GREEN}Selesai menghapus akun Trojan expired.${NC}"
+    else
+        echo "Tidak ada akun Trojan yang expired."
+    fi
+fi
+
+# ===== HAPUS VLESS =====
+if [ -f "$VLESS_DB" ]; then
+    expired_vless=()
+    while read -r line; do
+        [[ $line != "###"* ]] && continue
+        user=$(echo $line | awk '{print $2}')
+        exp=$(echo $line | awk '{print $3}')
+        [[ "$exp" < "$TODAY" ]] && expired_vless+=("$user")
+    done < "$VLESS_DB"
+
+    if [ ${#expired_vless[@]} -gt 0 ]; then
+        echo -e "${RED}Menghapus akun VLESS expired...${NC}"
+        for user in "${expired_vless[@]}"; do
+            echo -e " - $user"
+            [ -f /etc/vless/$user ] && rm -f /etc/vless/$user
+            sed -i "/#vless$/,/},{\"id\":.*\"email\": \"$user\"/d" "$CONFIG_FILE"
+            sed -i "/#vlessgrpc$/,/},{\"id\":.*\"email\": \"$user\"/d" "$CONFIG_FILE"
+            sed -i "/\b$user\b/d" "$VLESS_DB"
+        done
+        echo -e "${GREEN}Selesai menghapus akun VLESS expired.${NC}"
+    else
+        echo "Tidak ada akun VLESS yang expired."
+    fi
+fi
+
+# ===== RELOAD XRAY =====
+systemctl restart xray > /dev/null 2>&1
+
+echo -e "${GREEN}Proses hapus semua akun expired selesai.${NC}"
+echo "Domain: $domain"
+echo -e "${YELLOW}=====================================${NC}"
+read -p "ENTER UNTUK KEMBALI KE MENU"
+menu-system

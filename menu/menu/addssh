@@ -1,0 +1,203 @@
+#!/bin/bash
+
+# Warna
+RED='\033[0;31m'
+NC='\033[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+LIGHT='\033[0;37m'
+BGWHITE='\e[0;100;37m'
+YELLOW='\033[1;33m'
+
+#IZIN SCRIPT
+MYIP=$(curl -sS ipv4.icanhazip.com)
+echo -e "\e[32mloading...\e[0m"
+clear
+
+# // Validasi Script
+ipsaya=$(curl -sS ipv4.icanhazip.com)
+data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
+date_list=$(date +"%Y-%m-%d" -d "$data_server")
+data_ip="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
+checking_sc() {
+  useexp=$(wget -qO- $data_ip | grep $ipsaya | awk '{print $3}')
+  if [[ $date_list < $useexp ]]; then
+    echo -ne
+  else
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e "\033[42m          404 NOT FOUND AUTOSCRIPT          \033[0m"
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e ""
+    echo -e "            ${RED}PERMISSION DENIED !${NC}"
+    echo -e "   \033[0;33mYour VPS${NC} $ipsaya \033[0;33mHas been Banned${NC}"
+    echo -e "     \033[0;33mBuy access permissions for scripts${NC}"
+    echo -e "\033[1;93m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    exit 0
+  fi
+}
+checking_sc
+clear
+
+# Info server
+IP=$(curl -sS ipv4.icanhazip.com)
+ISP=$(cat /etc/xray/isp)
+CITY=$(cat /etc/xray/city)
+domain=$(cat /etc/xray/domain)
+NS=$(cat /etc/xray/dns)
+PUB=$(cat /etc/slowdns/server.pub)
+clear
+
+# ---------------------------------------------------
+# Input username: ulangi jika kosong atau sudah ada
+# ---------------------------------------------------
+while true; do
+  clear
+  echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+  echo -e "         BUAT AKUN SSH        "
+  echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+  echo -e "${PURPLE}◈━━━━━━━━◈◈━━━━━━━━━◈ ${NC}"
+
+  read -rp " Pengguna (User) : " Login
+  Login=$(echo "$Login" | xargs) # trim
+
+  if [[ -z "$Login" ]]; then
+    echo -e " ${RED}Nama Tidak Boleh Kosong${NC}"
+    read -n 1 -s -r -p " Tekan Enter Untuk Coba Lagi"
+    continue
+  fi
+
+  if [[ ! "$Login" =~ ^[a-zA-Z0-9_]+$ ]]; then
+    echo -e " ${RED}Nama Tidak Valid. Hanya huruf, angka, underscore (_) yang diperbolehkan.${NC}"
+    read -n 1 -s -r -p " Tekan Enter Untuk Coba Lagi"
+    continue
+  fi
+
+  if grep -qw "\"email\": \"$Login\"" /etc/xray/config.json 2>/dev/null; then
+    echo -e " ${YELLOW}Nama '$Login' sudah ada. Silakan pilih nama lain.${NC}"
+    read -n 1 -s -r -p " Tekan Enter Untuk Coba Lagi"
+    continue
+  fi
+  break
+done
+
+# Password input (random jika kosong)
+read -p " Password (Random) : " Pass
+[[ -z "$Pass" ]] && Pass=$(openssl rand -hex 4)
+
+# Fungsi untuk input wajib
+function input_wajib() {
+    local prompt="$1"
+    local var
+    while true; do
+        read -p "$prompt" var
+        if [ -n "$var" ]; then
+            echo "$var"
+            break
+        else
+            echo "Input tidak boleh kosong, silakan ulangi."
+        fi
+    done
+}
+
+masaaktif=$(input_wajib " Masa Aktif (Hari) : ")
+Quota=$(input_wajib " Batas Kuota (GB) : ")
+iplimit=$(input_wajib " Limit User (IP) : ")
+
+echo
+echo " Masa Aktif (Hari) : $masaaktif Hari"
+echo " Batas Kuota (GB) : $Quota GB"
+echo " Limit User (IP) : $iplimit IP"
+clear
+
+# Limit IP
+if [[ $iplimit -gt 0 ]]; then
+  mkdir -p /etc/kyt/limit/ssh/ip
+  echo -e "$iplimit" > /etc/kyt/limit/ssh/ip/$Login
+fi
+
+# Buat akun SSH
+tgl=$(date -d "$masaaktif days" +"%d")
+bln=$(date -d "$masaaktif days" +"%b")
+thn=$(date -d "$masaaktif days" +"%Y")
+expe="$tgl $bln, $thn"
+tgl2=$(date +"%d")
+bln2=$(date +"%b")
+thn2=$(date +"%Y")
+tnggl="$tgl2 $bln2, $thn2"
+
+useradd -e $(date -d "$masaaktif days" +"%Y-%m-%d") -s /bin/false -M $Login
+echo -e "$Pass\n$Pass\n" | passwd $Login &> /dev/null
+expi=$(date -d "$masaaktif days" +"%Y-%m-%d")
+
+[ ! -e /etc/ssh ] && mkdir -p /etc/ssh
+[[ -z ${Quota} ]] && Quota="0"
+
+c=$(echo "${Quota}" | sed 's/[^0-9]*//g')
+d=$((${c} * 1024 * 1024 * 1024))
+if [[ ${c} != "0" ]]; then
+  echo "${d}" >/etc/ssh/${Login}
+fi
+
+DATADB=$(grep "^#ssh#" /etc/ssh/.ssh.db | grep -w "${Login}" | awk '{print $2}')
+if [[ "${DATADB}" != '' ]]; then
+  sed -i "/\b${Login}\b/d" /etc/ssh/.ssh.db
+fi
+echo "#ssh# ${Login} ${Pass} ${Quota} ${iplimit} ${expe}" >>/etc/ssh/.ssh.db
+
+# Spinner loading singkat
+clear
+sec=3
+spinner=(⣻ ⢿ ⡿ ⣟ ⣯ ⣷)
+while [ $sec -gt 0 ]; do
+  idx=$((sec % ${#spinner[@]}))
+  echo -ne " ${spinner[$idx]} Memuat data...\r"
+  sleep 1
+  sec=$((sec - 1))
+done
+clear
+
+echo -e ""
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» INFORMASI AKUN « " | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» Domain  : $domain" | tee -a /etc/user-create/user.log
+echo -e "» Pengguna  : $Login" | tee -a /etc/user-create/user.log
+echo -e "» Sandi  : $Pass" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» Slowdns  : ${NS}" | tee -a /etc/user-create/user.log
+echo -e "» Pub Key  : ${PUB}" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» Port OpenSSH  : 443, 80, 22" | tee -a /etc/user-create/user.log
+echo -e "» Port DNS  : 443, 53 ,22 " | tee -a /etc/user-create/user.log
+echo -e "» Port SSH UDP  : 1-65535" | tee -a /etc/user-create/user.log
+echo -e "» Port Dropbear  : 443, 109" | tee -a /etc/user-create/user.log
+echo -e "» Port SSH WS  : 80, 8080, 8880, 2082" | tee -a /etc/user-create/user.log
+echo -e "» BadVPN  : 7100, 7300, 7300" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» SSH-80  : $domain:80@$Login:$Pass" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» SSH-443  : $domain:443@$Login:$Pass" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» SSH-UDP : $domain:1-65535@$Login:$Pass" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» WEBSOCKED" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e " GET / HTTP/1.1[crlf]host: $domain[crlf]Upgrade: Websocket[crlf][crlf]" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "» ENHANCED" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━◈◈━━━━━◈ ${NC}" | tee -a /etc/user-create/user.log
+echo -e "GET / HTTP/1.1[crlf]Host: bug[crlf][crlf]PATCH / HTTP/1.1[crlf]Host: $domain[crlf]Upgrade: websocket[crlf][crlf][split]HTTP/ 200[crlf][crlf]" | tee -a /etc/user-create/user.log
+echo -e "${Lgreen}◈━━━━━━━━◈◈━━━━━━━━◈ ${NC}"
+echo -e "» Batas Ip  : $iplimit Device" | tee -a /etc/user-create/user.log
+echo -e "» Batas Kuota  : $Quota GB" | tee -a /etc/user-create/user.log
+echo -e "» Aktif Selama  : $masaaktif Hari" | tee -a /etc/user-create/user.log
+echo -e "» Tanggal Dibuat  : $tnggl" | tee -a /etc/user-create/user.log
+echo -e "» Tanggal Exp  : $expe" | tee -a /etc/user-create/user.log
+echo -e "\033[92m◈━━━━━━━━◈◈━━━━━━━━◈ \033[0m" | tee -a /etc/user-create/user.log
+echo ""  | tee -a /etc/user-create/user.log
+read -p "Enter Untuk Kembali Ke Menu"
+m-sshws

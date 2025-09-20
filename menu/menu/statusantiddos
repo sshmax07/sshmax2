@@ -1,0 +1,45 @@
+#!/bin/bash
+# check-antiddos-installed.sh
+# Cek sederhana apakah Anti-DDoS (ddos-deflate) terpasang
+set -eu
+
+DDOS_DIR="/usr/local/ddos"
+DDOS_BIN="/usr/local/sbin/ddos"
+DDOS_SCRIPT="${DDOS_DIR}/ddos.sh"
+
+green="\033[32m"; red="\033[31m"; nc="\033[0m"
+ok(){ printf "${green}%s${nc}\n" "$*"; }
+err(){ printf "${red}%s${nc}\n" "$*"; }
+
+is_dir=false
+is_bin=false
+is_cron=false
+
+# Cek direktori
+if [ -d "$DDOS_DIR" ]; then
+  is_dir=true
+fi
+
+# Cek binary wrapper
+if [ -x "$DDOS_BIN" ]; then
+  is_bin=true
+fi
+
+# Cek crontab root (jika bisa baca)
+if crontab -l 2>/dev/null | grep -q '/usr/local/ddos/ddos.sh' 2>/dev/null; then
+  is_cron=true
+fi
+
+# Hasil
+if $is_dir || $is_bin || $is_cron ; then
+  ok "Anti-DDoS: terpasang"
+  # tambahan info singkat (opsional)
+  echo "Detail terdeteksi:"
+  $is_dir && echo " - ddos-deflate directory: present ($DDOS_DIR)"
+  $is_bin && echo " - wrapper binary: present & executable ($DDOS_BIN)"
+  $is_cron && echo " - cron job: root crontab contains /usr/local/ddos/ddos.sh"
+  exit 0
+else
+  err "Anti-DDoS: tidak terpasang"
+  exit 1
+fi

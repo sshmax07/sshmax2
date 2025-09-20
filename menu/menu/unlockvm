@@ -1,0 +1,69 @@
+#!/bin/bash
+# Script Unlock Akun VMESS (restore dari locked.db)
+
+RED="\033[31m"
+Lgreen='\033[92m'
+NC='\e[0m'
+
+CONFIG_FILE="/etc/xray/config.json"
+LOCK_FILE="/etc/vmess/locked.db"
+BACKUP_FILE="/etc/xray/config.json.bak"
+
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "            UNLOCK AKUN VMESS           "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+
+# tampilkan daftar akun ter-lock
+if [ ! -s "$LOCK_FILE" ]; then
+    echo -e "${RED}Tidak ada akun ter-lock di $LOCK_FILE${NC}"
+    exit 1
+fi
+
+grep -E "^### " "$LOCK_FILE" | awk '{print $2,$3}'
+echo ""
+read -rp "Masukkan username yang mau di-unlock: " user
+[ -z "$user" ] && { echo -e "${RED}Username tidak boleh kosong${NC}"; exit 1; }
+
+# Ambil exp user
+exp=$(grep -wE "^### $user" "$LOCK_FILE" | awk '{print $3}')
+if [ -z "$exp" ]; then
+    echo -e "${RED}User $user tidak ditemukan di locked.db${NC}"
+    exit 1
+fi
+
+# Backup dulu config.json
+cp "$CONFIG_FILE" "$BACKUP_FILE"
+
+# Ambil blok akun dari locked.db
+sed -n "/^### $user $exp/,/}/p" "$LOCK_FILE" > /tmp/unlock_$user.txt
+
+if [ ! -s /tmp/unlock_$user.txt ]; then
+    echo -e "${RED}Blok akun $user tidak ditemukan${NC}"
+    exit 1
+fi
+
+# Hapus blok dari locked.db
+sed -i "/^### $user $exp/,/}/d" "$LOCK_FILE"
+
+# Masukkan kembali ke config.json (setelah baris '#vmess')
+sed -i "/#vmess$/r /tmp/unlock_$user.txt" "$CONFIG_FILE"
+
+rm -f /tmp/unlock_$user.txt
+
+# Restart Xray agar aktif
+systemctl restart xray
+sleep 2
+
+if ! systemctl is-active --quiet xray; then
+    echo -e "${RED}Xray gagal start setelah unlock, mengembalikan config.json lama...${NC}"
+    cp "$BACKUP_FILE" "$CONFIG_FILE"
+    systemctl restart xray
+    if systemctl is-active --quiet xray; then
+        echo -e "${Lgreen}Config.json berhasil dipulihkan & Xray normal lagi.${NC}"
+    else
+        echo -e "${RED}Restore gagal! Silakan cek manual ${CONFIG_FILE}${NC}"
+    fi
+else
+    echo -e "${Lgreen}User $user berhasil di-unlock & dikembalikan ke config.json${NC}"
+fi

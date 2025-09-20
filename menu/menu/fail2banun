@@ -1,0 +1,71 @@
+#!/bin/bash
+# Uninstall Fail2Ban + jail.d + filter.d + watchdog
+# Script uninstall pendamping dari: install-antiddos-fail2ban.sh
+# Usage: sudo ./uninstall-antiddos-fail2ban.sh
+
+set -euo pipefail
+
+# ---------- Variables ----------
+BACKUP_DIR="/root/antiddos-backups"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+SQLITE_DB="/var/lib/fail2ban/fail2ban.sqlite3"
+
+# ---------- Helpers ----------
+require_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "[ERROR] Script harus dijalankan sebagai root. Gunakan sudo."
+        exit 1
+    fi
+}
+
+# ---------- Backup ----------
+backup_configs() {
+    echo "[INFO] Backup konfigurasi Fail2Ban sebelum uninstall..."
+    mkdir -p "$BACKUP_DIR"
+    if [ -d /etc/fail2ban ]; then
+        cp -a /etc/fail2ban "$BACKUP_DIR/fail2ban-$TIMESTAMP" || true
+        echo "[OK] Backup konfigurasi disimpan: $BACKUP_DIR/fail2ban-$TIMESTAMP"
+    fi
+    if [ -f "$SQLITE_DB" ]; then
+        mkdir -p "$BACKUP_DIR/db"
+        cp -a "$SQLITE_DB" "$BACKUP_DIR/db/fail2ban.sqlite3-$TIMESTAMP" || true
+    fi
+}
+
+# ---------- Remove watchdog ----------
+remove_watchdog() {
+    echo "[INFO] Menghapus watchdog systemd..."
+    systemctl disable --now fail2ban-watchdog.timer >/dev/null 2>&1 || true
+    systemctl disable --now fail2ban-watchdog.service >/dev/null 2>&1 || true
+    rm -f /etc/systemd/system/fail2ban-watchdog.service
+    rm -f /etc/systemd/system/fail2ban-watchdog.timer
+    systemctl daemon-reload
+    echo "[OK] Watchdog dihapus."
+}
+
+# ---------- Uninstall Fail2Ban ----------
+uninstall_fail2ban() {
+    echo "[INFO] Menghapus Fail2Ban..."
+    systemctl stop fail2ban >/dev/null 2>&1 || true
+    systemctl disable fail2ban >/dev/null 2>&1 || true
+
+    if command -v apt >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt purge -y fail2ban || true
+        apt autoremove -y || true
+        echo "[OK] Paket Fail2Ban sudah dihapus."
+    else
+        echo "[WARN] apt tidak ditemukan. Hapus fail2ban manual."
+    fi
+}
+
+# ---------- Main ----------
+main() {
+    require_root
+    backup_configs
+    remove_watchdog
+    uninstall_fail2ban
+    echo "[DONE] Fail2Ban berhasil dihapus."
+    echo "Backup konfigurasi ada di: $BACKUP_DIR"
+}
+
+main "$@"

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+RED="\033[31m"
+YELLOW="\033[33m"
+NC='\e[0m'
+Lgreen='\033[92m'
+PURPLE='\033[35m'
+YELL='\033[0;33m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[33m'
+BGWHITE='\e[0;100;37m'
+
+clear
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "         ADD BOT NOTIFIKASI            "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "${grenbo}Tutorial Creat Bot and ID Telegram${NC}"
+echo -e "${grenbo}[*] Creat Bot and Token Bot : @BotFather${NC}"
+echo -e "${grenbo}[*] Info Id Telegram : @MissRose_bot ${NC}"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e ""
+read -rp "[*] Input your Bot Token : " -e bottoken 
+read -rp "[*] Input Your Id Telegram : " -e admin
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+clear
+
+if [[ ${c} != "0" ]]; then
+  echo "${d}" >/etc/bot/${bottoken}
+fi
+DATADB=$(cat /etc/bot/.bot.db | grep "^#bot#" | grep -w "${bottoken}" | awk '{print $2}')
+if [[ "${DATADB}" != '' ]]; then
+  sed -i "/\b${user}\b/d" /etc/bot/.bot.db
+fi
+echo "#bot# ${bottoken} ${admin}" >>/etc/bot/.bot.db
+
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo -e "         SUCCES ADD BOT NOTIFIKASI        "
+echo -e "${Lgreen}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+echo " Bot Token    : $bottoken"
+echo " ID Telegram  : $admin"
+echo -e "${PURPLE}◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ ${NC}"
+read -n 1 -s -r -p " Enter Untuk Kembali Ke Menu"
+menu

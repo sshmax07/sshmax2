@@ -1,0 +1,119 @@
+#!/bin/bash
+Green="\e[92;1m"
+RED="\033[31m"
+YELLOW="\033[33m"
+BLUE="\033[36m"
+FONT="\033[0m"
+GREENBG="\033[42;37m"
+REDBG="\033[41;37m"
+OK="${Green}--->${FONT}"
+ERROR="${RED}[ERROR]${FONT}"
+GRAY="\e[1;30m"
+NC='\e[0m'
+red='\e[1;31m'
+green='\e[0;32m'
+DF='\e[39m'
+Bold='\e[1m'
+Blink='\e[5m'
+yell='\e[33m'
+red='\e[31m'
+green='\e[32m'
+blue='\e[34m'
+PURPLE='\e[35m'
+cyan='\e[36m'
+Lred='\e[91m'
+Lgreen='\e[92m'
+Lgreen='\e[93m'
+NC='\e[0m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+LIGHT='\033[0;37m'
+grenbo="\e[92;1m"
+red() { echo -e "\\033[32;1m${*}\\033[0m"; }
+ipsaya=$(curl -sS ipv4.icanhazip.com)
+data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
+date_list=$(date +"%Y-%m-%d" -d "$data_server")
+data_ip="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
+checking_sc() {
+  useexp=$(wget -qO- $data_ip | grep $ipsaya | awk '{print $3}')
+  if [[ $date_list < $useexp ]]; then
+    echo -ne
+  else
+    echo -e "\033[1;93m────────────────────────────────────────────\033[0m"
+    echo -e "\033[42m          404 NOT FOUND AUTOSCRIPT          \033[0m"
+    echo -e "\033[1;93m────────────────────────────────────────────\033[0m"
+    echo -e ""
+    echo -e "            ${RED}PERMISSION DENIED !${NC}"
+    echo -e "   \033[0;33mYour VPS${NC} $ipsaya \033[0;33mHas been Banned${NC}"
+    echo -e "\033[1;93m────────────────────────────────────────────\033[0m"
+    exit 0
+  fi
+}
+checking_sc
+clear
+#Domain
+domain=$(cat /etc/xray/domain)
+
+echo -e "\033[92m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e "            SSH & OPEN VPN           "
+echo -e "\033[92m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e "\033[35m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e " [\033[92m01\033[0m"]. BUAT AKUN SSH
+echo -e " [\033[92m02\033[0m"]. BUAT TRIAL AKUN SSH
+echo -e " [\033[92m03\033[0m"]. PERBARUI AKUN SSH
+echo -e " [\033[92m04\033[0m"]. CEK LOGIN AKUN SSH
+echo -e " [\033[92m05\033[0m"]. DAFTAR AKUN SSH
+echo -e " [\033[92m06\033[0m"]. HAPUS AKUN SSH
+echo -e " [\033[92m07\033[0m"]. HAPUS AKUN EXPIRED
+echo -e " [\033[92m08\033[0m"]. SET AUTO KILL
+echo -e " [\033[92m09\033[0m"]. CEK MULTY LOGIN SSH
+echo -e " [\033[92m10\033[0m"]. KUNCI AKUN SSH
+echo -e " [\033[92m11\033[0m"]. BUKA KUNCI AKUN SSH
+echo -e " [\033[92m00\033[0m"]. ENTER UNTUK KEMBALI KE MENU
+echo -e "\033[35m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e "\033[92m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e "            🇯‌🇳‌🇸‌🇹‌🇴‌🇷‌🇪‌        "
+echo -e "\033[92m◈━━━━━━━━━━━━━━━━━◈◈━━━━━━━━━━━━━━━━━◈ \033[0m"
+echo -e ""
+read -p "MENU : " menu
+echo -e ""
+case $menu in
+1)
+    addssh
+    ;;
+2)
+    trial
+    ;;
+3)
+    renewssh
+    ;;
+4)
+    cekssh
+    ;;
+5)
+    member
+    ;;
+6)
+    delssh
+    ;;
+7)
+    delexp
+    ;;
+8)
+    autokill
+    ;;
+9)
+    ceklim
+    ;;
+10) 
+    clear
+    lock
+   ;;
+11)
+    clear
+    unlock
+    ;;
+*)
+    menu
+    ;;
+esac
