@@ -958,7 +958,8 @@ clear
     install_xray
     ssh
     udp_mini
-    ssh_slow
+	install_zivpn_udp
+	ssh_slow
     ins_SSHD
     ins_dropbear
     ins_vnstat
