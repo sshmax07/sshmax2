@@ -232,6 +232,58 @@ function base_package() {
     
 }
 clear
+
+function firewall_setup() {
+clear
+print_install "Firewall Hardening"
+
+# Flush rules
+iptables -F
+iptables -X
+iptables -t nat -F
+iptables -t nat -X
+
+# Default policy
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT ACCEPT
+
+# Loopback
+iptables -A INPUT -i lo -j ACCEPT
+
+# Established & Related
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# ===============================
+# ZIVPN UDP
+iptables -A INPUT -p udp --dport 5667 -j ACCEPT
+iptables -A INPUT -p udp --dport 6000:19999 -j ACCEPT
+
+iptables -t nat -A PREROUTING -p udp --dport 6000:19999 -j DNAT --to-destination :5667
+# ===============================
+
+# SSH (limit brute force)
+iptables -A INPUT -p tcp --dport 22 -m connlimit --connlimit-above 3 -j DROP
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+# Web
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+
+# Drop invalid packets
+iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
+
+# SYN flood protection
+iptables -A INPUT -p tcp --syn -m limit --limit 2/s --limit-burst 10 -j ACCEPT
+
+# Save rules (persistent)
+iptables-save > /etc/iptables.up.rules
+netfilter-persistent save
+netfilter-persistent reload
+
+print_success "Firewall Active"
+}
+
 # Fungsi input domain
 function pasang_domain() {
 echo -e ""
