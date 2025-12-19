@@ -597,9 +597,12 @@ EOF
 fi
 
 # ── IPTABLES (ANTI DUPLIKAT) ─────────────────
-iface=$(ip route | awk '/default/ {print $5}')
-iptables -t nat -C PREROUTING -i "$iface" -p udp --dport 6000:19999 -j DNAT --to :5667 2>/dev/null || \
-iptables -t nat -A PREROUTING -i "$iface" -p udp --dport 6000:19999 -j DNAT --to :5667
+systemctl enable netfilter-persistent
+systemctl restart netfilter-persistent
+sleep 2
+
+iptables -t nat -C PREROUTING -p udp --dport 6000:19999 -j DNAT --to :5667 2>/dev/null || \
+iptables -t nat -A PREROUTING -p udp --dport 6000:19999 -j DNAT --to :5667
 
 netfilter-persistent save
 
