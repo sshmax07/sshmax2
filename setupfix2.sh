@@ -527,34 +527,57 @@ sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
 print_success "Password SSH"
 }
 
+is_zivpn_installed() {
+    [[ -x /usr/local/bin/zivpn ]] && \
+    [[ -f /etc/systemd/system/zivpn.service ]] && \
+    systemctl list-units --type=service | grep -q zivpn
+}
+
 function install_zivpn(){
 clear
-print_install "Memasang ZIVPN UDP Tunnel"
+print_install "ZIVPN UDP Tunnel"
 
-# Cek existing
-if [ -f /usr/local/bin/zivpn ] || [ -f /etc/systemd/system/zivpn.service ]; then
-    echo -e "${YELLOW}ZIVPN sudah terpasang, dilewati.${NC}"
+# ── CEK EXISTING ─────────────────────────────
+if is_zivpn_installed; then
+    echo -e "${GREEN}ZIVPN sudah terpasang, dilewati.${NC}"
     sleep 2
     return
 fi
 
-# Download binary
-wget -q https://github.com/ChristopherAGT/zivpn-tunnel-udp/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 \
--O /usr/local/bin/zivpn
-chmod +x /usr/local/bin/zivpn
+# ── BINARY ───────────────────────────────────
+if [ ! -x /usr/local/bin/zivpn ]; then
+    wget -q https://github.com/ChristopherAGT/zivpn-tunnel-udp/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 \
+    -O /usr/local/bin/zivpn
+    chmod +x /usr/local/bin/zivpn
+fi
 
-# Config
+# ── CONFIG ───────────────────────────────────
 mkdir -p /etc/zivpn
-wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/config.json \
--O /etc/zivpn/config.json
+if [ ! -f /etc/zivpn/config.json ]; then
+cat >/etc/zivpn/config.json <<'EOF'
+{
+  "listen": ":5667",
+  "cert": "/etc/zivpn/zivpn.crt",
+  "key": "/etc/zivpn/zivpn.key",
+  "obfs":"zivpn",
+  "auth": {
+    "mode": "passwords",
+    "config": ["zivpn"]
+  }
+}
+EOF
+fi
 
-# SSL lokal
-openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
--subj "/CN=zivpn" \
--keyout /etc/zivpn/zivpn.key \
--out /etc/zivpn/zivpn.crt >/dev/null 2>&1
+# ── SSL ──────────────────────────────────────
+if [ ! -f /etc/zivpn/zivpn.key ]; then
+    openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
+    -subj "/CN=zivpn" \
+    -keyout /etc/zivpn/zivpn.key \
+    -out /etc/zivpn/zivpn.crt >/dev/null 2>&1
+fi
 
-# Systemd
+# ── SYSTEMD ──────────────────────────────────
+if [ ! -f /etc/systemd/system/zivpn.service ]; then
 cat >/etc/systemd/system/zivpn.service <<EOF
 [Unit]
 Description=ZIVPN UDP Server
@@ -571,21 +594,25 @@ AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
 [Install]
 WantedBy=multi-user.target
 EOF
+fi
 
-# Iptables (tanpa UFW)
-iface=$(ip route | awk '/default/ {print $5; exit}')
-iptables -t nat -C PREROUTING -i $iface -p udp --dport 6000:19999 -j DNAT --to :5667 2>/dev/null || \
-iptables -t nat -A PREROUTING -i $iface -p udp --dport 6000:19999 -j DNAT --to :5667
+# ── IPTABLES (ANTI DUPLIKAT) ─────────────────
+iface=$(ip route | awk '/default/ {print $5}')
+iptables -t nat -C PREROUTING -i "$iface" -p udp --dport 6000:19999 -j DNAT --to :5667 2>/dev/null || \
+iptables -t nat -A PREROUTING -i "$iface" -p udp --dport 6000:19999 -j DNAT --to :5667
 
 netfilter-persistent save
+
+# ── PANEL ────────────────────────────────────
+if [ ! -x /usr/local/bin/menu-zivpn ]; then
+    wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/panel-udp-zivpn.sh \
+    -O /usr/local/bin/menu-zivpn
+    chmod +x /usr/local/bin/menu-zivpn
+fi
+
 systemctl daemon-reload
 systemctl enable zivpn
-systemctl start zivpn
-
-# Panel
-wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/panel-udp-zivpn.sh \
--O /usr/local/bin/menu-zivpn
-chmod +x /usr/local/bin/menu-zivpn
+systemctl restart zivpn
 
 print_success "ZIVPN UDP Tunnel"
 }
