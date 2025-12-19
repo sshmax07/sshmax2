@@ -232,58 +232,6 @@ function base_package() {
     
 }
 clear
-
-function firewall_setup() {
-clear
-print_install "Firewall Hardening"
-
-# Flush rules
-iptables -F
-iptables -X
-iptables -t nat -F
-iptables -t nat -X
-
-# Default policy
-iptables -P INPUT DROP
-iptables -P FORWARD DROP
-iptables -P OUTPUT ACCEPT
-
-# Loopback
-iptables -A INPUT -i lo -j ACCEPT
-
-# Established & Related
-iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-# ===============================
-# ZIVPN UDP
-iptables -A INPUT -p udp --dport 5667 -j ACCEPT
-iptables -A INPUT -p udp --dport 6000:19999 -j ACCEPT
-
-iptables -t nat -A PREROUTING -p udp --dport 6000:19999 -j DNAT --to-destination :5667
-# ===============================
-
-# SSH (limit brute force)
-iptables -A INPUT -p tcp --dport 22 -m connlimit --connlimit-above 3 -j DROP
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-
-# Web
-iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-
-# Drop invalid packets
-iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
-
-# SYN flood protection
-iptables -A INPUT -p tcp --syn -m limit --limit 2/s --limit-burst 10 -j ACCEPT
-
-# Save rules (persistent)
-iptables-save > /etc/iptables.up.rules
-netfilter-persistent save
-netfilter-persistent reload
-
-print_success "Firewall Active"
-}
-
 # Fungsi input domain
 function pasang_domain() {
 echo -e ""
@@ -577,6 +525,69 @@ ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 # set locale
 sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
 print_success "Password SSH"
+}
+
+function install_zivpn(){
+clear
+print_install "Memasang ZIVPN UDP Tunnel"
+
+# Cek existing
+if [ -f /usr/local/bin/zivpn ] || [ -f /etc/systemd/system/zivpn.service ]; then
+    echo -e "${YELLOW}ZIVPN sudah terpasang, dilewati.${NC}"
+    sleep 2
+    return
+fi
+
+# Download binary
+wget -q https://github.com/ChristopherAGT/zivpn-tunnel-udp/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 \
+-O /usr/local/bin/zivpn
+chmod +x /usr/local/bin/zivpn
+
+# Config
+mkdir -p /etc/zivpn
+wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/config.json \
+-O /etc/zivpn/config.json
+
+# SSL lokal
+openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
+-subj "/CN=zivpn" \
+-keyout /etc/zivpn/zivpn.key \
+-out /etc/zivpn/zivpn.crt >/dev/null 2>&1
+
+# Systemd
+cat >/etc/systemd/system/zivpn.service <<EOF
+[Unit]
+Description=ZIVPN UDP Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/zivpn server -c /etc/zivpn/config.json
+Restart=always
+RestartSec=3
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Iptables (tanpa UFW)
+iface=$(ip route | awk '/default/ {print $5; exit}')
+iptables -t nat -C PREROUTING -i $iface -p udp --dport 6000:19999 -j DNAT --to :5667 2>/dev/null || \
+iptables -t nat -A PREROUTING -i $iface -p udp --dport 6000:19999 -j DNAT --to :5667
+
+netfilter-persistent save
+systemctl daemon-reload
+systemctl enable zivpn
+systemctl start zivpn
+
+# Panel
+wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/panel-udp-zivpn.sh \
+-O /usr/local/bin/menu-zivpn
+chmod +x /usr/local/bin/menu-zivpn
+
+print_success "ZIVPN UDP Tunnel"
 }
 
 function udp_mini(){
@@ -953,8 +964,8 @@ clear
     install_xray
     ssh
     udp_mini
+    install_zivpn
     ssh_slow
-    ins_SSHD
     ins_dropbear
     ins_vnstat
     ins_backup
