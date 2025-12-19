@@ -608,7 +608,7 @@ netfilter-persistent save
 
 # ── PANEL ────────────────────────────────────
 if [ ! -x /usr/local/bin/menu-zivpn ]; then
-    wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/panel-udp-zivpn.sh \
+    wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/panel-udp-zivpn.sh \
     -O /usr/local/bin/menu-zivpn
     chmod +x /usr/local/bin/menu-zivpn
 fi
