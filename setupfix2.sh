@@ -546,7 +546,7 @@ fi
 
 # ── BINARY ───────────────────────────────────
 if [ ! -x /usr/local/bin/zivpn ]; then
-    wget -q https://github.com/ChristopherAGT/zivpn-tunnel-udp/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 \
+    wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/install-amd.sh \
     -O /usr/local/bin/zivpn
     chmod +x /usr/local/bin/zivpn
 fi
