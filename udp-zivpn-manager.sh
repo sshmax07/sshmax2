@@ -133,7 +133,7 @@ mostrar_menu() {
 instalar_amd() {
   clear
   echo -e "${GREEN}🚀 Downloading installer for AMD64...${RESET}"
-  wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/install-amd.sh -O install-amd.sh &
+  wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/install-amd.sh -O install-amd.sh &
   spinner
   if [[ ! -f install-amd.sh ]]; then
     echo -e "${RED}❌ Error: Failed to download the file.${RESET}"
@@ -150,7 +150,7 @@ instalar_amd() {
 instalar_arm() {
   clear
   echo -e "${GREEN}📦 Downloading installer for ARM64...${RESET}"
-  wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/install-arm.sh -O install-arm.sh &
+  wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main//install-arm.sh -O install-arm.sh &
   spinner
   if [[ ! -f install-arm.sh ]]; then
     echo -e "${RED}❌ Error: Failed to download the file.${RESET}"
@@ -167,7 +167,7 @@ instalar_arm() {
 desinstalar_udp() {
   clear
   echo -e "${RED}🧹 Downloading uninstall script...${RESET}"
-  wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/uninstall.sh -O uninstall.sh &
+  wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main//uninstall.sh -O uninstall.sh &
   spinner
   if [[ ! -f uninstall.sh ]]; then
     echo -e "${RED}❌ Error: Failed to download the file.${RESET}"
@@ -187,7 +187,7 @@ desinstalar_udp() {
 fix_iptables_zivpn() {
   clear
   echo -e "${CYAN}🔧 Applying persistent iptables fix for ZIVPN...${RESET}"
-  wget -q https://raw.githubusercontent.com/ChristopherAGT/zivpn-tunnel-udp/main/zivpn-iptables-fix.sh -O zivpn-iptables-fix.sh
+  wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/zivpn-iptables-fix.sh -O zivpn-iptables-fix.sh
   if [[ ! -f zivpn-iptables-fix.sh ]]; then
     echo -e "${RED}❌ Error: Failed to download the fix.${RESET}"
     read -p "Press Enter to continue..."
