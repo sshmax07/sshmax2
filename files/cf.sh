@@ -30,7 +30,7 @@ DOMAIN="sshmaxid2.my.id"
 SUB_DOMAIN="${PREFIX}${NUM}.${DOMAIN}"
 
 # Cloudflare credentials
-CF_ID="sshmax07@gmail.com"
+CF_ID="sshmaxid2.my.id"
 CF_KEY="f7ea037c96fb407fb1b17b7399fb149049842"
 
 set -euo pipefail
