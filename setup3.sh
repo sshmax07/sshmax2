@@ -2,24 +2,34 @@
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
-# WARNA
+Green="\e[92;1m"
 RED="\033[31m"
-GREEN="\033[32m"
 YELLOW="\033[33m"
-NC="\033[0m"
+BLUE="\033[36m"
+FONT="\033[0m"
+OK="${Green}  »${FONT}"
+ERROR="${RED}[ERROR]${FONT}"
+NC='\e[0m'
 
-IP=$(curl -s ifconfig.me)
+# IP
+export IP=$(curl -s ifconfig.me)
+
+# REPO
 REPO="https://raw.githubusercontent.com/sshmax07/sshmax2/main/"
 
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo " AUTO INSTALL VPN (FINAL STABLE)"
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+clear
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "  » AUTO INSTALL VPN SERVER (FIXED ORIGINAL)"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 # ROOT CHECK
-[ "$EUID" -ne 0 ] && echo "Run as root!" && exit 1
+if [ "$EUID" -ne 0 ]; then
+    echo "Run as root!"
+    exit 1
+fi
 
 # ==============================
-# BASE PACKAGE
+# BASE PACKAGE (OPTIMIZED)
 # ==============================
 base_package() {
 apt update -y
@@ -30,6 +40,10 @@ build-essential git screen xz-utils chrony
 
 systemctl enable --now chrony
 systemctl disable --now ufw 2>/dev/null || true
+systemctl disable --now firewalld 2>/dev/null || true
+
+apt autoremove -y
+apt clean
 }
 
 # ==============================
@@ -54,7 +68,7 @@ fi
 }
 
 # ==============================
-# FIREWALL
+# FIREWALL (SAFE)
 # ==============================
 firewall_setup() {
 iptables -P INPUT ACCEPT
@@ -79,7 +93,7 @@ netfilter-persistent save
 }
 
 # ==============================
-# XRAY
+# XRAY FIX
 # ==============================
 install_xray() {
 mkdir -p /etc/xray
@@ -92,7 +106,7 @@ systemctl enable --now xray
 }
 
 # ==============================
-# NGINX + HAPROXY
+# WEB
 # ==============================
 install_web() {
 systemctl enable --now nginx
@@ -108,48 +122,43 @@ systemctl enable --now dropbear
 }
 
 # ==============================
-# WS ePRO
+# WS ePRO FIX
 # ==============================
 install_ws() {
-wget -q -O /usr/bin/ws "${REPO}files/ws"
+wget -O /usr/bin/ws "${REPO}files/ws"
 chmod +x /usr/bin/ws
 
-wget -q -O /etc/systemd/system/ws.service "${REPO}files/ws.service"
+wget -O /etc/systemd/system/ws.service "${REPO}files/ws.service"
 
 systemctl daemon-reload
 systemctl enable --now ws
 }
 
 # ==============================
-# UDP MINI
+# UDP MINI FIX
 # ==============================
 install_udp() {
-echo "Install UDP Mini..."
 
-# STOP dulu kalau sudah running
+# STOP biar tidak "text file busy"
 systemctl stop udp-mini-1 2>/dev/null || true
 systemctl stop udp-mini-2 2>/dev/null || true
 systemctl stop udp-mini-3 2>/dev/null || true
 pkill -f udp-mini 2>/dev/null || true
 
 mkdir -p /usr/local/kyt
-
-# hapus lama
 rm -f /usr/local/kyt/udp-mini
 
-# download baru
-wget -q -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
+wget -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
 chmod +x /usr/local/kyt/udp-mini
 
-# service
-wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
-wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
-wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
+wget -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
+wget -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
+wget -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
 
 systemctl daemon-reload
 
 for i in 1 2 3; do
-    systemctl enable --now udp-mini-$i
+systemctl enable --now udp-mini-$i
 done
 }
 
@@ -163,7 +172,7 @@ screen -dmS badvpn7300 badvpn-udpgw --listen-addr 127.0.0.1:7300
 }
 
 # ==============================
-# MENU
+# MENU (ORIGINAL)
 # ==============================
 install_menu() {
 wget ${REPO}menu/menu.zip
@@ -196,9 +205,11 @@ systemctl restart cron
 enable_services() {
 systemctl daemon-reload
 
-for svc in nginx xray haproxy cron netfilter-persistent; do
-systemctl enable --now $svc
-done
+systemctl enable --now nginx
+systemctl enable --now xray
+systemctl enable --now haproxy
+systemctl enable --now cron
+systemctl enable --now netfilter-persistent
 }
 
 # ==============================
@@ -219,7 +230,15 @@ profile_install
 enable_services
 setup_autoreboot
 
-echo -e "${GREEN}INSTALL SUCCESS${NC}"
+# FINAL FIX SERVICE
+systemctl restart dropbear
+systemctl restart ws
+systemctl restart nginx
+systemctl restart xray
+systemctl restart haproxy
+systemctl restart cron
+
+echo -e "${Green}INSTALL SUCCESS${NC}"
 
 read -p "Reboot sekarang? (y/n): " rb
 [ "$rb" = "y" ] && reboot
