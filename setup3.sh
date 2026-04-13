@@ -128,13 +128,29 @@ install_ws() {
 # UDP MINI (ZIVPN)
 # ==============================
 install_udp() {
+    echo "Install UDP Mini..."
+
     wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel
     chmod +x fv-tunnel
     ./fv-tunnel
 
+    mkdir -p /usr/local/kyt
+
+    wget -q -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
+    chmod +x /usr/local/kyt/udp-mini
+
+    # WAJIB: download service
+    wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
+    wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
+    wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
+
+    systemctl daemon-reload
+
     for i in 1 2 3; do
         systemctl enable --now udp-mini-$i
     done
+
+    echo "UDP Mini OK"
 }
 
 # ==============================
