@@ -79,10 +79,20 @@ firewall_setup() {
 # XRAY
 # ==============================
 install_xray() {
+    echo "Install Xray Core..."
+
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data
 
-    wget -q -O /etc/xray/config.json "${REPO}config/config.json"
+    # WAJIB: pastikan folder ada
+    mkdir -p /etc/xray
+
+    # download config (cara lama, tapi lebih aman)
+    wget -O /etc/xray/config.json "${REPO}config/config.json"
+
+    systemctl daemon-reload
     systemctl enable --now xray
+
+    echo "Xray installed"
 }
 
 # ==============================
