@@ -11,27 +11,44 @@ OK="${Green}  »${FONT}"
 ERROR="${RED}[ERROR]${FONT}"
 NC='\e[0m'
 
-# IP
+clear
 export IP=$(curl -s ifconfig.me)
 
-# REPO
 REPO="https://raw.githubusercontent.com/sshmax07/sshmax2/main/"
 
-clear
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "  » AUTO INSTALL VPN SERVER (FIXED ORIGINAL)"
+echo -e "  » This Will Quick Setup VPN Server On Your Server"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-# ROOT CHECK
-if [ "$EUID" -ne 0 ]; then
-    echo "Run as root!"
+sleep 1
+
+# ==============================
+# VALIDASI
+# ==============================
+if [[ $(uname -m) != "x86_64" ]]; then
+    echo -e "${ERROR} Architecture Not Supported"
     exit 1
 fi
 
+if ! grep -Eq "ubuntu|debian" /etc/os-release; then
+    echo -e "${ERROR} OS Not Supported"
+    exit 1
+fi
+
+echo -e "${OK} IP: $IP"
+
+read -p "Press Enter to start..."
+
 # ==============================
-# BASE PACKAGE (OPTIMIZED)
+# XRAY DIR
 # ==============================
-base_package() {
+mkdir -p /etc/xray /var/log/xray /var/lib/kyt
+touch /etc/xray/domain
+touch /var/log/xray/access.log /var/log/xray/error.log
+
+# ==============================
+# BASE PACKAGE (RINGAN)
+# ==============================
 apt update -y
 apt install -y zip unzip curl wget cron nginx haproxy \
 iptables iptables-persistent netfilter-persistent \
@@ -40,16 +57,10 @@ build-essential git screen xz-utils chrony
 
 systemctl enable --now chrony
 systemctl disable --now ufw 2>/dev/null || true
-systemctl disable --now firewalld 2>/dev/null || true
-
-apt autoremove -y
-apt clean
-}
 
 # ==============================
 # DOMAIN
 # ==============================
-pasang_domain() {
 echo "1. Domain Sendiri"
 echo "2. Auto Domain"
 read -p "Pilih: " host
@@ -58,19 +69,15 @@ if [[ $host == "1" ]]; then
 read -p "Domain: " domain
 echo "$domain" > /etc/xray/domain
 echo "$domain" > /root/domain
-
-elif [[ $host == "2" ]]; then
+else
 wget ${REPO}files/cf.sh -O cf.sh
-chmod +x cf.sh
-./cf.sh
+chmod +x cf.sh && ./cf.sh
 rm -f cf.sh
 fi
-}
 
 # ==============================
-# FIREWALL (SAFE)
+# FIREWALL
 # ==============================
-firewall_setup() {
 iptables -P INPUT ACCEPT
 iptables -F
 
@@ -90,12 +97,10 @@ iptables -A INPUT -p udp --dport 6000:19999 -j ACCEPT
 
 iptables-save > /etc/iptables.up.rules
 netfilter-persistent save
-}
 
 # ==============================
 # XRAY FIX
 # ==============================
-install_xray() {
 mkdir -p /etc/xray
 
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data
@@ -103,28 +108,16 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 wget -O /etc/xray/config.json "${REPO}config/config.json"
 
 systemctl enable --now xray
-}
 
 # ==============================
-# WEB
+# SSH & DROPBEAR
 # ==============================
-install_web() {
-systemctl enable --now nginx
-systemctl enable --now haproxy
-}
-
-# ==============================
-# SSH + DROPBEAR
-# ==============================
-install_ssh() {
 systemctl enable --now ssh
 systemctl enable --now dropbear
-}
 
 # ==============================
 # WS ePRO FIX
 # ==============================
-install_ws() {
 wget -O /usr/bin/ws "${REPO}files/ws"
 chmod +x /usr/bin/ws
 
@@ -132,14 +125,10 @@ wget -O /etc/systemd/system/ws.service "${REPO}files/ws.service"
 
 systemctl daemon-reload
 systemctl enable --now ws
-}
 
 # ==============================
 # UDP MINI FIX
 # ==============================
-install_udp() {
-
-# STOP biar tidak "text file busy"
 systemctl stop udp-mini-1 2>/dev/null || true
 systemctl stop udp-mini-2 2>/dev/null || true
 systemctl stop udp-mini-3 2>/dev/null || true
@@ -156,84 +145,46 @@ wget -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
 wget -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
 
 systemctl daemon-reload
-
-for i in 1 2 3; do
-systemctl enable --now udp-mini-$i
-done
-}
+systemctl enable --now udp-mini-1
+systemctl enable --now udp-mini-2
+systemctl enable --now udp-mini-3
 
 # ==============================
 # BADVPN
 # ==============================
-install_badvpn() {
 screen -dmS badvpn7100 badvpn-udpgw --listen-addr 127.0.0.1:7100
 screen -dmS badvpn7200 badvpn-udpgw --listen-addr 127.0.0.1:7200
 screen -dmS badvpn7300 badvpn-udpgw --listen-addr 127.0.0.1:7300
-}
 
 # ==============================
-# MENU (ORIGINAL)
+# MENU
 # ==============================
-install_menu() {
 wget ${REPO}menu/menu.zip
 unzip menu.zip
 chmod +x menu/*
 mv menu/* /usr/local/sbin
 rm -rf menu menu.zip
-}
 
-profile_install() {
 cat >/root/.profile <<EOF
 if [ "\$BASH" ]; then
 . ~/.bashrc
 fi
 menu
 EOF
-}
 
 # ==============================
 # AUTOREBOOT
 # ==============================
-setup_autoreboot() {
 echo "0 3 * * * root reboot" > /etc/cron.d/reboot
 systemctl restart cron
-}
 
 # ==============================
-# ENABLE SERVICE
+# FINAL RESTART SERVICE
 # ==============================
-enable_services() {
-systemctl daemon-reload
-
-systemctl enable --now nginx
-systemctl enable --now xray
-systemctl enable --now haproxy
-systemctl enable --now cron
-systemctl enable --now netfilter-persistent
-}
-
-# ==============================
-# MAIN
-# ==============================
-echo "Installing..."
-base_package
-firewall_setup
-pasang_domain
-install_web
-install_xray
-install_ssh
-install_ws
-install_udp
-install_badvpn
-install_menu
-profile_install
-enable_services
-setup_autoreboot
-
-# FINAL FIX SERVICE
+systemctl restart nginx
+systemctl restart ssh
 systemctl restart dropbear
 systemctl restart ws
-systemctl restart nginx
 systemctl restart xray
 systemctl restart haproxy
 systemctl restart cron
