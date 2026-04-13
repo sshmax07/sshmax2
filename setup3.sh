@@ -124,14 +124,24 @@ systemctl enable --now ws
 # UDP MINI
 # ==============================
 install_udp() {
-wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel
-chmod +x fv-tunnel
-./fv-tunnel
+echo "Install UDP Mini..."
+
+# STOP dulu kalau sudah running
+systemctl stop udp-mini-1 2>/dev/null || true
+systemctl stop udp-mini-2 2>/dev/null || true
+systemctl stop udp-mini-3 2>/dev/null || true
+pkill -f udp-mini 2>/dev/null || true
 
 mkdir -p /usr/local/kyt
+
+# hapus lama
+rm -f /usr/local/kyt/udp-mini
+
+# download baru
 wget -q -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
 chmod +x /usr/local/kyt/udp-mini
 
+# service
 wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
 wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
 wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
@@ -139,7 +149,7 @@ wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.servi
 systemctl daemon-reload
 
 for i in 1 2 3; do
-systemctl enable --now udp-mini-$i
+    systemctl enable --now udp-mini-$i
 done
 }
 
