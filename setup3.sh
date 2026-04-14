@@ -433,22 +433,46 @@ clear
 function pasang_ssl() {
 clear
 print_install "Memasang SSL Pada Domain"
-    rm -rf /etc/xray/xray.key
-    rm -rf /etc/xray/xray.crt
-    domain=$(cat /root/domain)
-    STOPWEBSERVER=$(lsof -i:80 | cut -d' ' -f1 | awk 'NR==2 {print $1}')
-    rm -rf /root/.acme.sh
-    mkdir /root/.acme.sh
-    systemctl stop $STOPWEBSERVER
-    systemctl stop nginx
-    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
-    chmod +x /root/.acme.sh/acme.sh
-    /root/.acme.sh/acme.sh --upgrade --auto-upgrade
-    /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-    /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
-    ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/xray/xray.crt --keypath /etc/xray/xray.key --ecc
-    chmod 777 /etc/xray/xray.key
-    print_success "SSL Certificate"
+
+domain=$(cat /root/domain)
+
+# VALIDASI
+if [[ -z "$domain" ]]; then
+    echo "ERROR: Domain kosong! Setup domain dulu."
+    exit 1
+fi
+
+rm -rf /etc/xray/xray.key
+rm -rf /etc/xray/xray.crt
+
+# Stop webserver aman
+systemctl stop nginx 2>/dev/null || true
+fuser -k 80/tcp 2>/dev/null || true
+
+# Install acme
+rm -rf /root/.acme.sh
+mkdir /root/.acme.sh
+
+curl -s https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+chmod +x /root/.acme.sh/acme.sh
+
+/root/.acme.sh/acme.sh --upgrade --auto-upgrade
+/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+
+# ISSUE SSL
+/root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256 || {
+    echo "SSL GAGAL! Pastikan domain sudah pointing ke VPS"
+    exit 1
+}
+
+# INSTALL CERT
+/root/.acme.sh/acme.sh --installcert -d $domain \
+--fullchainpath /etc/xray/xray.crt \
+--keypath /etc/xray/xray.key --ecc
+
+chmod 600 /etc/xray/xray.key
+
+print_success "SSL Certificate"
 }
 
 function make_folder_xray() {
