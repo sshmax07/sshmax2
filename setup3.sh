@@ -399,52 +399,6 @@ exp=$(cat /usr/bin/e)
 echo -e "User     : $username"
 echo -e "Expired  : $exp"
 
-}
-# CERTIFICATE STATUS
-d1=$(date -d "$valid" +%s)
-d2=$(date -d "$today" +%s)
-certifacate=$(((d1 - d2) / 86400))
-# VPS Information
-DATE=$(date +'%Y-%m-%d')
-datediff() {
-    d1=$(date -d "$1" +%s)
-    d2=$(date -d "$2" +%s)
-    echo -e "$COLOR1 $NC Expiry In   : $(( (d1 - d2) / 86400 )) Days"
-}
-mai="datediff "$Exp" "$DATE""
-
-ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10 )
-# Status Expired Active
-Info="(${green}Active${NC})"
-Error="(${RED}ExpiRED${NC})"
-today=`date -d "0 days" +"%Y-%m-%d"`
-Exp1=$(curl $izinsc | grep $MYIP | awk '{print $4}')
-if [[ $today < $Exp1 ]]; then
-sts="${Info}"
-else
-sts="${Error}"
-fi
-TIMES="10"
-CHATID=""
-KEY=""
-URL="https://api.telegram.org/bot$KEY/sendMessage"
-    TIMEZONE=$(printf '%(%H:%M:%S)T')
-    TEXT="
-<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
-<b>PREMIUM AUTOSCRIPT</b>
-<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
-<code>User     :</code><code>$username</code>
-<code>Domain   :</code><code>$domain</code>
-<code>IPVPS    :</code><code>$MYIP</code>
-<code>ISP      :</code><code>$ISP</code>
-<code>DATE     :</code><code>$DATE</code>
-<code>Time     :</code><code>$TIMEZONE</code>
-<code>Exp Sc.  :</code><code>$exp</code>
-<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
-<i>Automatic Notifications From Github</i>
-"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"t.me"}]]}' 
-
-    #curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
 clear
 # Pasang SSL
 function pasang_ssl() {
