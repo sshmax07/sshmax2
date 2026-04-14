@@ -366,22 +366,40 @@ fi
 clear
 #GANTI PASSWORD DEFAULT
 restart_system(){
-#IZIN SCRIPT
-MYIP=$(curl -sS ipv4.icanhazip.com)
-echo -e "\e[32mloading...\e[0m" 
-clear
+
+echo -e "\e[32mChecking License...\e[0m"
+
+MYIP=$(curl -s ipv4.icanhazip.com)
 izinsc="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
-# USERNAME
-rm -f /usr/bin/user
-username=$(curl $izinsc | grep $MYIP | awk '{print $2}')
-echo "$username" >/usr/bin/user
-expx=$(curl $izinsc | grep $MYIP | awk '{print $3}')
-echo "$expx" >/usr/bin/e
-# DETAIL ORDER
+
+# Ambil data sekali saja
+data=$(curl -s $izinsc | grep $MYIP)
+
+# Validasi
+if [[ -z "$data" ]]; then
+    echo "IP tidak terdaftar di sistem izin!"
+    username="unknown"
+    exp="unknown"
+else
+    username=$(echo "$data" | awk '{print $2}')
+    exp=$(echo "$data" | awk '{print $3}')
+fi
+
+# Simpan ke file
+echo "$username" > /usr/bin/user
+echo "$exp" > /usr/bin/e
+
+# OPTIONAL (biar tidak error lagi)
+echo "1.0" > /usr/bin/ver
+
+# Ambil ulang (biar konsisten)
 username=$(cat /usr/bin/user)
-oid=$(cat /usr/bin/ver)
 exp=$(cat /usr/bin/e)
-clear
+
+echo -e "User     : $username"
+echo -e "Expired  : $exp"
+
+}
 # CERTIFICATE STATUS
 d1=$(date -d "$valid" +%s)
 d2=$(date -d "$today" +%s)
