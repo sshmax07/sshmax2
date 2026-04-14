@@ -444,7 +444,7 @@ URL="https://api.telegram.org/bot$KEY/sendMessage"
 <i>Automatic Notifications From Github</i>
 "'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"t.me"}]]}' 
 
-    curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
+    #curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
 }
 clear
 # Pasang SSL
@@ -478,6 +478,10 @@ chmod +x /root/.acme.sh/acme.sh
 /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
 
 # ISSUE SSL
+if ! ping -c 1 $domain &>/dev/null; then
+    echo "Domain belum pointing ke VPS!"
+    exit 1
+fi
 /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256 || {
     echo "SSL GAGAL! Pastikan domain sudah pointing ke VPS"
     exit 1
@@ -546,7 +550,7 @@ clear
     
     # / / Ambil Xray Core Version Terbaru
 latest_version="$(curl -s https://api.github.com/repos/XTLS/Xray-core/releases | grep tag_name | sed -E 's/.*"v(.*)".*/\1/' | head -n 1)"
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 1.8.23
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data
  
     # // Ambil Config Server
     mkdir -p /etc/xray
@@ -842,13 +846,9 @@ function ins_restart(){
     systemctl restart cron
     systemctl daemon-reload
 
-    systemctl enable nginx
-    systemctl enable xray
-    systemctl enable dropbear
-    systemctl enable cron
-    systemctl enable haproxy
-    systemctl enable ws
-    systemctl enable fail2ban
+    for svc in nginx xray dropbear cron haproxy ws fail2ban; do
+    systemctl enable --now $svc
+done
 
     history -c
     echo "unset HISTFILE" >> /etc/profile
@@ -1014,6 +1014,6 @@ rm -rf /root/domain
 secs_to_human "$(($(date +%s) - ${start}))"
 sudo hostnamectl set-hostname $username
 echo -e "${green} Script Successfull Installed"
-echo ""
-read -p "$( echo -e "Press ${YELLOW}[ ${NC}${YELLOW}Enter${NC} ${YELLOW}]${NC} For reboot") "
+echo "Reboot dalam 5 detik..."
+sleep 5
 reboot
