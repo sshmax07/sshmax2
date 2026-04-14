@@ -585,12 +585,31 @@ clear
 function ins_dropbear(){
 clear
 print_install "Menginstall Dropbear"
-# // Installing Dropbear
+
+# Install
 apt-get install dropbear -y > /dev/null 2>&1
-wget -q -O /etc/default/dropbear "${REPO}config/dropbear.conf"
-chmod +x /etc/default/dropbear
-/etc/init.d/dropbear restart
-/etc/init.d/dropbear status
+
+# Backup config lama (kalau ada)
+[ -f /etc/default/dropbear ] && cp /etc/default/dropbear /etc/default/dropbear.bak
+
+# Config aman (ANTI BENTROK)
+cat > /etc/default/dropbear <<EOF
+NO_START=0
+DROPBEAR_PORT=143
+DROPBEAR_EXTRA_ARGS="-p 109 -p 69"
+DROPBEAR_BANNER="/etc/issue.net"
+EOF
+
+chmod 644 /etc/default/dropbear
+
+# Reload & start
+systemctl daemon-reload
+systemctl enable dropbear
+systemctl restart dropbear || true
+
+# Cek status
+systemctl status dropbear --no-pager
+
 print_success "Dropbear"
 }
 
