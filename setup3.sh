@@ -232,8 +232,8 @@ function base_package() {
     ntpdate pool.ntp.org
 
     # MATIKAN firewall bawaan (JANGAN DIHAPUS)
-    systemctl disable --now ufw 2>/dev/null
-    systemctl disable --now firewalld 2>/dev/null
+    systemctl disable --now ufw 2>/dev/null || true
+	systemctl disable --now firewalld 2>/dev/null || true
 
     # Hapus mail server yang tidak perlu
     apt-get remove --purge exim4 -y
