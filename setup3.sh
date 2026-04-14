@@ -617,23 +617,29 @@ clear
 function ins_vnstat(){
 clear
 print_install "Menginstall Vnstat"
-# setting vnstat
+
+# Install vnstat
 apt -y install vnstat > /dev/null 2>&1
-/etc/init.d/vnstat restart
-apt -y install libsqlite3-dev > /dev/null 2>&1
-wget https://humdi.net/vnstat/vnstat-2.6.tar.gz
-tar zxvf vnstat-2.6.tar.gz
-cd vnstat-2.6
-./configure --prefix=/usr --sysconfdir=/etc && make && make install
-cd
-vnstat --add -i $NET
-sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
-chown vnstat:vnstat /var/lib/vnstat -R
+
+# Detect interface otomatis
+NET=$(ip route | grep default | awk '{print $5}' | head -n1)
+
+# Tambahkan interface ke vnstat
+vnstat --add -i $NET >/dev/null 2>&1 || true
+
+# Set config interface
+sed -i "s|Interface.*|Interface \"$NET\"|g" /etc/vnstat.conf
+
+# Permission fix
+chown -R vnstat:vnstat /var/lib/vnstat
+
+# Enable & restart service
 systemctl enable vnstat
-/etc/init.d/vnstat restart
-/etc/init.d/vnstat status
-rm -f /root/vnstat-2.6.tar.gz
-rm -rf /root/vnstat-2.6
+systemctl restart vnstat
+
+# Status check
+systemctl status vnstat --no-pager
+
 print_success "Vnstat"
 }
 
