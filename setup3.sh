@@ -310,34 +310,57 @@ print_success "Firewall Active"
 }
 
 clear
-# Fungsi input domain
 function pasang_domain() {
 echo -e ""
 clear
+
+# FIX PATH (WAJIB)
+mkdir -p /etc/xray
+mkdir -p /etc/v2ray
+touch /etc/xray/domain
+touch /etc/v2ray/domain
+
 echo -e "${green} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ${FONT}"
 echo -e "${YELLOW}» SETUP DOMAIN CLOUDFLARE ${FONT}"
 echo -e "${green} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ${FONT}"
 echo -e "  [1] Domain Pribadi"
 echo -e "  [2] Domain Bawaan"
 echo -e "${green} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ${FONT}"
+
 read -p "  Silahkan Pilih Menu Domain 1 or 2 (enter) : " host
 echo ""
+
 if [[ $host == "1" ]]; then
-echo -e "   \e[1;32mMasukan Domain Anda ! $NC"
-read -p "   Subdomain: " host1
-echo "IP=" >> /var/lib/kyt/ipvps.conf
-echo $host1 > /etc/xray/domain
-echo $host1 > /root/domain
-echo ""
+    echo -e "   \e[1;32mMasukan Domain Anda ! $NC"
+    read -p "   Subdomain: " host1
+
+    echo "IP=" >> /var/lib/kyt/ipvps.conf
+    echo $host1 > /etc/xray/domain
+    echo $host1 > /etc/v2ray/domain
+    echo $host1 > /root/domain
+
 elif [[ $host == "2" ]]; then
-#install cf
-wget ${REPO}files/cf.sh && chmod +x cf.sh && ./cf.sh
-rm -f /root/cf.sh
-clear
-else
-print_install "Random Subdomain/Domain is Used"
-clear
+    # install cf + FIX PATH
+    wget -q ${REPO}files/cf.sh -O cf.sh
+
+    # 🔥 PATCH AUTO (INI PENTING)
+    sed -i 's|/etc/v2ray/domain|/etc/xray/domain|g' cf.sh
+
+    chmod +x cf.sh
+    ./cf.sh
+
+    # Sync hasil ke xray
+    if [ -f /etc/xray/domain ]; then
+        cat /etc/xray/domain > /root/domain
     fi
+
+    rm -f cf.sh
+    clear
+
+else
+    print_install "Random Subdomain/Domain is Used"
+    clear
+fi
 }
 
 clear
