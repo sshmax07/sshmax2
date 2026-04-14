@@ -432,10 +432,6 @@ chmod +x /root/.acme.sh/acme.sh
 /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
 
 # ISSUE SSL
-if ! ping -c 1 $domain &>/dev/null; then
-    echo "Domain belum pointing ke VPS!"
-    exit 1
-fi
 /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256 || {
     echo "SSL GAGAL! Pastikan domain sudah pointing ke VPS"
     exit 1
