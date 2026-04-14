@@ -445,7 +445,6 @@ URL="https://api.telegram.org/bot$KEY/sendMessage"
 "'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"t.me"}]]}' 
 
     #curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
-}
 clear
 # Pasang SSL
 function pasang_ssl() {
