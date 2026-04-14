@@ -603,13 +603,17 @@ clear
 print_install "Memasang Service Limit IP & Quota"
 wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel && chmod +x fv-tunnel && ./fv-tunnel
 
-# // Installing UDP Mini
-mkdir -p /usr/local/kyt/
+# STOP
+systemctl stop udp-mini-1 2>/dev/null || true
+systemctl stop udp-mini-2 2>/dev/null || true
+systemctl stop udp-mini-3 2>/dev/null || true
+pkill -f udp-mini 2>/dev/null || true
+
+# INSTALL
 wget -q -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
 chmod +x /usr/local/kyt/udp-mini
-wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
-wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
-wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
+
+# START
 systemctl enable --now udp-mini-1
 systemctl enable --now udp-mini-2
 systemctl enable --now udp-mini-3
