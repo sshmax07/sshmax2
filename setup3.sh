@@ -398,6 +398,7 @@ exp=$(cat /usr/bin/e)
 
 echo -e "User     : $username"
 echo -e "Expired  : $exp"
+}
 
 clear
 # Pasang SSL
