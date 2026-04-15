@@ -366,91 +366,89 @@ fi
 clear
 #GANTI PASSWORD DEFAULT
 restart_system(){
-
-echo -e "\e[32mChecking License...\e[0m"
-
-MYIP=$(curl -s ipv4.icanhazip.com)
+#IZIN SCRIPT
+MYIP=$(curl -sS ipv4.icanhazip.com)
+echo -e "\e[32mloading...\e[0m" 
+clear
 izinsc="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
-
-# Ambil data sekali saja
-data=$(curl -s $izinsc | grep $MYIP)
-
-# Validasi
-if [[ -z "$data" ]]; then
-    echo "IP tidak terdaftar di sistem izin!"
-    username="unknown"
-    exp="unknown"
-else
-    username=$(echo "$data" | awk '{print $2}')
-    exp=$(echo "$data" | awk '{print $3}')
-fi
-
-# Simpan ke file
-echo "$username" > /usr/bin/user
-echo "$exp" > /usr/bin/e
-
-# OPTIONAL (biar tidak error lagi)
-echo "1.0" > /usr/bin/ver
-
-# Ambil ulang (biar konsisten)
+# USERNAME
+rm -f /usr/bin/user
+username=$(curl $izinsc | grep $MYIP | awk '{print $2}')
+echo "$username" >/usr/bin/user
+expx=$(curl $izinsc | grep $MYIP | awk '{print $3}')
+echo "$expx" >/usr/bin/e
+# DETAIL ORDER
 username=$(cat /usr/bin/user)
+oid=$(cat /usr/bin/ver)
 exp=$(cat /usr/bin/e)
-
-echo -e "User     : $username"
-echo -e "Expired  : $exp"
+clear
+# CERTIFICATE STATUS
+d1=$(date -d "$valid" +%s)
+d2=$(date -d "$today" +%s)
+certifacate=$(((d1 - d2) / 86400))
+# VPS Information
+DATE=$(date +'%Y-%m-%d')
+datediff() {
+    d1=$(date -d "$1" +%s)
+    d2=$(date -d "$2" +%s)
+    echo -e "$COLOR1 $NC Expiry In   : $(( (d1 - d2) / 86400 )) Days"
 }
+mai="datediff "$Exp" "$DATE""
 
+ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10 )
+# Status Expired Active
+Info="(${green}Active${NC})"
+Error="(${RED}ExpiRED${NC})"
+today=`date -d "0 days" +"%Y-%m-%d"`
+Exp1=$(curl $izinsc | grep $MYIP | awk '{print $4}')
+if [[ $today < $Exp1 ]]; then
+sts="${Info}"
+else
+sts="${Error}"
+fi
+TIMES="10"
+CHATID=""
+KEY=""
+URL="https://api.telegram.org/bot$KEY/sendMessage"
+    TIMEZONE=$(printf '%(%H:%M:%S)T')
+    TEXT="
+<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
+<b>PREMIUM AUTOSCRIPT</b>
+<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
+<code>User     :</code><code>$username</code>
+<code>Domain   :</code><code>$domain</code>
+<code>IPVPS    :</code><code>$MYIP</code>
+<code>ISP      :</code><code>$ISP</code>
+<code>DATE     :</code><code>$DATE</code>
+<code>Time     :</code><code>$TIMEZONE</code>
+<code>Exp Sc.  :</code><code>$exp</code>
+<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
+<i>Automatic Notifications From Github</i>
+"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"t.me"}]]}' 
+
+    curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
+}
 clear
 # Pasang SSL
 function pasang_ssl() {
 clear
 print_install "Memasang SSL Pada Domain"
-
-domain=$(cat /root/domain)
-
-# VALIDASI DOMAIN
-if [[ -z "$domain" ]]; then
-    echo "ERROR: Domain kosong! Setup domain dulu."
-    exit 1
-fi
-
-# STOP SEMUA SERVICE PORT 80 (INI KUNCI FIX)
-systemctl stop nginx 2>/dev/null || true
-systemctl stop haproxy 2>/dev/null || true
-fuser -k 80/tcp 2>/dev/null || true
-
-# HAPUS CERT LAMA
-rm -rf /etc/xray/xray.key
-rm -rf /etc/xray/xray.crt
-
-# INSTALL ACME
-rm -rf /root/.acme.sh
-mkdir /root/.acme.sh
-
-curl -s https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
-chmod +x /root/.acme.sh/acme.sh
-
-/root/.acme.sh/acme.sh --upgrade --auto-upgrade
-/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-
-# ISSUE SSL
-/root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256 || {
-    echo "SSL GAGAL! Pastikan domain pointing & port 80 bebas"
-    exit 1
-}
-
-# INSTALL CERT
-/root/.acme.sh/acme.sh --installcert -d $domain \
---fullchainpath /etc/xray/xray.crt \
---keypath /etc/xray/xray.key --ecc
-
-chmod 600 /etc/xray/xray.key
-
-# START LAGI SERVICE
-systemctl start nginx 2>/dev/null || true
-systemctl start haproxy 2>/dev/null || true
-
-print_success "SSL Certificate"
+    rm -rf /etc/xray/xray.key
+    rm -rf /etc/xray/xray.crt
+    domain=$(cat /root/domain)
+    STOPWEBSERVER=$(lsof -i:80 | cut -d' ' -f1 | awk 'NR==2 {print $1}')
+    rm -rf /root/.acme.sh
+    mkdir /root/.acme.sh
+    systemctl stop $STOPWEBSERVER
+    systemctl stop nginx
+    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+    chmod +x /root/.acme.sh/acme.sh
+    /root/.acme.sh/acme.sh --upgrade --auto-upgrade
+    /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+    /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
+    ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/xray/xray.crt --keypath /etc/xray/xray.key --ecc
+    chmod 777 /etc/xray/xray.key
+    print_success "SSL Certificate"
 }
 
 function make_folder_xray() {
@@ -506,11 +504,10 @@ clear
     
     # / / Ambil Xray Core Version Terbaru
 latest_version="$(curl -s https://api.github.com/repos/XTLS/Xray-core/releases | grep tag_name | sed -E 's/.*"v(.*)".*/\1/' | head -n 1)"
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 1.8.23
  
     # // Ambil Config Server
-    mkdir -p /etc/xray
-    wget -O /etc/xray/config.json "${REPO}config/config.json"
+    wget -O /etc/xray/config.json "${REPO}config/config.json" >/dev/null 2>&1
     wget -O /etc/systemd/system/runn.service "${REPO}files/runn.service" >/dev/null 2>&1
     #chmod +x /usr/local/bin/xray
     domain=$(cat /etc/xray/domain)
@@ -579,48 +576,27 @@ print_success "Password SSH"
 function udp_mini(){
 clear
 print_install "Memasang Service Limit IP & Quota"
+wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel && chmod +x fv-tunnel && ./fv-tunnel
 
-# fv-tunnel
-wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel -O fv-tunnel || {
-    echo "Gagal download fv-tunnel"
-    exit 1
-}
-chmod +x fv-tunnel
-./fv-tunnel
-
-# Folder
-mkdir -p /usr/local/kyt
-
-# STOP
-systemctl stop udp-mini-1 2>/dev/null || true
-systemctl stop udp-mini-2 2>/dev/null || true
-systemctl stop udp-mini-3 2>/dev/null || true
-pkill -f udp-mini 2>/dev/null || true
-
-# CLEAN
-rm -f /usr/local/kyt/udp-mini
-
-# DOWNLOAD BINARY
-wget -q --show-progress -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini" || {
-    echo "GAGAL download udp-mini!"
-    exit 1
-}
-
+# // Installing UDP Mini
+mkdir -p /usr/local/kyt/
+wget -q -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
 chmod +x /usr/local/kyt/udp-mini
-
-# 🔥 DOWNLOAD SERVICE FILE (INI YANG KURANG)
 wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
 wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
 wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
-
-# RELOAD SYSTEMD
-systemctl daemon-reload
-
-# START SERVICE
-systemctl enable --now udp-mini-1
-systemctl enable --now udp-mini-2
-systemctl enable --now udp-mini-3
-
+systemctl disable udp-mini-1
+systemctl stop udp-mini-1
+systemctl enable udp-mini-1
+systemctl start udp-mini-1
+systemctl disable udp-mini-2
+systemctl stop udp-mini-2
+systemctl enable udp-mini-2
+systemctl start udp-mini-2
+systemctl disable udp-mini-3
+systemctl stop udp-mini-3
+systemctl enable udp-mini-3
+systemctl start udp-mini-3
 print_success "Limit IP Service"
 }
 
@@ -640,31 +616,12 @@ clear
 function ins_dropbear(){
 clear
 print_install "Menginstall Dropbear"
-
-# Install
+# // Installing Dropbear
 apt-get install dropbear -y > /dev/null 2>&1
-
-# Backup config lama (kalau ada)
-[ -f /etc/default/dropbear ] && cp /etc/default/dropbear /etc/default/dropbear.bak
-
-# Config aman (ANTI BENTROK)
-cat > /etc/default/dropbear <<EOF
-NO_START=0
-DROPBEAR_PORT=143
-DROPBEAR_EXTRA_ARGS="-p 109 -p 69"
-DROPBEAR_BANNER="/etc/issue.net"
-EOF
-
-chmod 644 /etc/default/dropbear
-
-# Reload & start
-systemctl daemon-reload
-systemctl enable dropbear
-systemctl restart dropbear || true
-
-# Cek status
-systemctl status dropbear --no-pager
-
+wget -q -O /etc/default/dropbear "${REPO}config/dropbear.conf"
+chmod +x /etc/default/dropbear
+/etc/init.d/dropbear restart
+/etc/init.d/dropbear status
 print_success "Dropbear"
 }
 
@@ -672,29 +629,23 @@ clear
 function ins_vnstat(){
 clear
 print_install "Menginstall Vnstat"
-
-# Install vnstat
+# setting vnstat
 apt -y install vnstat > /dev/null 2>&1
-
-# Detect interface otomatis
-NET=$(ip route | grep default | awk '{print $5}' | head -n1)
-
-# Tambahkan interface ke vnstat
-vnstat --add -i $NET >/dev/null 2>&1 || true
-
-# Set config interface
-sed -i "s|Interface.*|Interface \"$NET\"|g" /etc/vnstat.conf
-
-# Permission fix
-chown -R vnstat:vnstat /var/lib/vnstat
-
-# Enable & restart service
+/etc/init.d/vnstat restart
+apt -y install libsqlite3-dev > /dev/null 2>&1
+wget https://humdi.net/vnstat/vnstat-2.6.tar.gz
+tar zxvf vnstat-2.6.tar.gz
+cd vnstat-2.6
+./configure --prefix=/usr --sysconfdir=/etc && make && make install
+cd
+vnstat -u -i $NET
+sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
+chown vnstat:vnstat /var/lib/vnstat -R
 systemctl enable vnstat
-systemctl restart vnstat
-
-# Status check
-systemctl status vnstat --no-pager
-
+/etc/init.d/vnstat restart
+/etc/init.d/vnstat status
+rm -f /root/vnstat-2.6.tar.gz
+rm -rf /root/vnstat-2.6
 print_success "Vnstat"
 }
 
@@ -821,16 +772,19 @@ function ins_restart(){
     systemctl restart nginx
     systemctl restart ssh
     systemctl restart dropbear
-    systemctl restart ws
     systemctl restart fail2ban
     systemctl restart vnstat
     systemctl restart haproxy
     systemctl restart cron
     systemctl daemon-reload
 
-    for svc in nginx xray dropbear cron haproxy ws fail2ban; do
-    systemctl enable --now $svc
-done
+    systemctl enable nginx
+    systemctl enable xray
+    systemctl enable dropbear
+    systemctl enable cron
+    systemctl enable haproxy
+    systemctl enable ws
+    systemctl enable fail2ban
 
     history -c
     echo "unset HISTFILE" >> /etc/profile
@@ -944,15 +898,19 @@ print_success "Menu Packet"
 
 # Restart layanan after install
 function enable_services(){
-    print_install "Enable All Services"
-
+clear
+print_install "Enable Service"
     systemctl daemon-reload
-
-    for svc in nginx xray haproxy cron netfilter-persistent; do
-        systemctl enable --now $svc
-    done
-
-    print_success "All services running"
+    systemctl start netfilter-persistent
+    systemctl enable rc-local
+    systemctl enable --now cron
+    systemctl enable --now netfilter-persistent
+    systemctl restart nginx
+    systemctl restart xray
+    systemctl restart cron
+    systemctl restart haproxy
+    print_success "Enable Service"
+    clear
 }
 
 # Fingsi Install Script
@@ -965,7 +923,7 @@ clear
     firewall_setup
     make_folder_xray
     pasang_domain
-    #password_default
+    password_default
     pasang_ssl
     install_xray
     ssh
