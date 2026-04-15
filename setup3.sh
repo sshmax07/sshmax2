@@ -580,7 +580,7 @@ function udp_mini(){
 clear
 print_install "Memasang Service Limit IP & Quota"
 
-# Jalankan fv-tunnel (lebih aman)
+# fv-tunnel
 wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel -O fv-tunnel || {
     echo "Gagal download fv-tunnel"
     exit 1
@@ -588,33 +588,35 @@ wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel
 chmod +x fv-tunnel
 ./fv-tunnel
 
-# Pastikan folder ada
+# Folder
 mkdir -p /usr/local/kyt
 
-# STOP service lama
+# STOP
 systemctl stop udp-mini-1 2>/dev/null || true
 systemctl stop udp-mini-2 2>/dev/null || true
 systemctl stop udp-mini-3 2>/dev/null || true
 pkill -f udp-mini 2>/dev/null || true
 
-# Hapus file lama (biar clean)
+# CLEAN
 rm -f /usr/local/kyt/udp-mini
 
-# DOWNLOAD (WAJIB VALIDASI)
+# DOWNLOAD BINARY
 wget -q --show-progress -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini" || {
-    echo "GAGAL download udp-mini dari repo!"
+    echo "GAGAL download udp-mini!"
     exit 1
 }
 
-# CEK FILE (ANTI ERROR KAYAK KEMARIN)
-if [[ ! -s /usr/local/kyt/udp-mini ]]; then
-    echo "File udp-mini kosong / tidak valid!"
-    exit 1
-fi
-
 chmod +x /usr/local/kyt/udp-mini
 
-# START service
+# 🔥 DOWNLOAD SERVICE FILE (INI YANG KURANG)
+wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
+wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
+wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
+
+# RELOAD SYSTEMD
+systemctl daemon-reload
+
+# START SERVICE
 systemctl enable --now udp-mini-1
 systemctl enable --now udp-mini-2
 systemctl enable --now udp-mini-3
