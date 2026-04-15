@@ -408,20 +408,22 @@ print_install "Memasang SSL Pada Domain"
 
 domain=$(cat /root/domain)
 
-# VALIDASI
+# VALIDASI DOMAIN
 if [[ -z "$domain" ]]; then
     echo "ERROR: Domain kosong! Setup domain dulu."
     exit 1
 fi
 
+# STOP SEMUA SERVICE PORT 80 (INI KUNCI FIX)
+systemctl stop nginx 2>/dev/null || true
+systemctl stop haproxy 2>/dev/null || true
+fuser -k 80/tcp 2>/dev/null || true
+
+# HAPUS CERT LAMA
 rm -rf /etc/xray/xray.key
 rm -rf /etc/xray/xray.crt
 
-# Stop webserver aman
-systemctl stop nginx 2>/dev/null || true
-fuser -k 80/tcp 2>/dev/null || true
-
-# Install acme
+# INSTALL ACME
 rm -rf /root/.acme.sh
 mkdir /root/.acme.sh
 
@@ -433,7 +435,7 @@ chmod +x /root/.acme.sh/acme.sh
 
 # ISSUE SSL
 /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256 || {
-    echo "SSL GAGAL! Pastikan domain sudah pointing ke VPS"
+    echo "SSL GAGAL! Pastikan domain pointing & port 80 bebas"
     exit 1
 }
 
@@ -443,6 +445,10 @@ chmod +x /root/.acme.sh/acme.sh
 --keypath /etc/xray/xray.key --ecc
 
 chmod 600 /etc/xray/xray.key
+
+# START LAGI SERVICE
+systemctl start nginx 2>/dev/null || true
+systemctl start haproxy 2>/dev/null || true
 
 print_success "SSL Certificate"
 }
