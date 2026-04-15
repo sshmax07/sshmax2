@@ -923,7 +923,7 @@ clear
     firewall_setup
     make_folder_xray
     pasang_domain
-    password_default
+    #password_default
     pasang_ssl
     install_xray
     ssh
