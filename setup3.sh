@@ -366,89 +366,78 @@ fi
 clear
 #GANTI PASSWORD DEFAULT
 restart_system(){
-#IZIN SCRIPT
-MYIP=$(curl -sS ipv4.icanhazip.com)
-echo -e "\e[32mloading...\e[0m" 
-clear
+
+echo -e "\e[32mChecking License...\e[0m"
+
+MYIP=$(curl -s ipv4.icanhazip.com)
 izinsc="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
-# USERNAME
-rm -f /usr/bin/user
-username=$(curl $izinsc | grep $MYIP | awk '{print $2}')
-echo "$username" >/usr/bin/user
-expx=$(curl $izinsc | grep $MYIP | awk '{print $3}')
-echo "$expx" >/usr/bin/e
-# DETAIL ORDER
-username=$(cat /usr/bin/user)
-oid=$(cat /usr/bin/ver)
-exp=$(cat /usr/bin/e)
-clear
-# CERTIFICATE STATUS
-d1=$(date -d "$valid" +%s)
-d2=$(date -d "$today" +%s)
-certifacate=$(((d1 - d2) / 86400))
-# VPS Information
-DATE=$(date +'%Y-%m-%d')
-datediff() {
-    d1=$(date -d "$1" +%s)
-    d2=$(date -d "$2" +%s)
-    echo -e "$COLOR1 $NC Expiry In   : $(( (d1 - d2) / 86400 )) Days"
-}
-mai="datediff "$Exp" "$DATE""
 
-ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10 )
-# Status Expired Active
-Info="(${green}Active${NC})"
-Error="(${RED}ExpiRED${NC})"
-today=`date -d "0 days" +"%Y-%m-%d"`
-Exp1=$(curl $izinsc | grep $MYIP | awk '{print $4}')
-if [[ $today < $Exp1 ]]; then
-sts="${Info}"
+data=$(curl -s $izinsc | grep $MYIP)
+
+if [[ -z "$data" ]]; then
+    username="unknown"
+    exp="unknown"
 else
-sts="${Error}"
+    username=$(echo "$data" | awk '{print $2}')
+    exp=$(echo "$data" | awk '{print $3}')
 fi
-TIMES="10"
-CHATID=""
-KEY=""
-URL="https://api.telegram.org/bot$KEY/sendMessage"
-    TIMEZONE=$(printf '%(%H:%M:%S)T')
-    TEXT="
-<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
-<b>PREMIUM AUTOSCRIPT</b>
-<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
-<code>User     :</code><code>$username</code>
-<code>Domain   :</code><code>$domain</code>
-<code>IPVPS    :</code><code>$MYIP</code>
-<code>ISP      :</code><code>$ISP</code>
-<code>DATE     :</code><code>$DATE</code>
-<code>Time     :</code><code>$TIMEZONE</code>
-<code>Exp Sc.  :</code><code>$exp</code>
-<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
-<i>Automatic Notifications From Github</i>
-"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"t.me"}]]}' 
 
-    curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
+echo "$username" > /usr/bin/user
+echo "$exp" > /usr/bin/e
+echo "1.0" > /usr/bin/ver
+
+echo -e "User     : $username"
+echo -e "Expired  : $exp"
 }
-clear
 # Pasang SSL
 function pasang_ssl() {
 clear
 print_install "Memasang SSL Pada Domain"
-    rm -rf /etc/xray/xray.key
-    rm -rf /etc/xray/xray.crt
-    domain=$(cat /root/domain)
-    STOPWEBSERVER=$(lsof -i:80 | cut -d' ' -f1 | awk 'NR==2 {print $1}')
-    rm -rf /root/.acme.sh
-    mkdir /root/.acme.sh
-    systemctl stop $STOPWEBSERVER
-    systemctl stop nginx
-    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
-    chmod +x /root/.acme.sh/acme.sh
-    /root/.acme.sh/acme.sh --upgrade --auto-upgrade
-    /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-    /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
-    ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/xray/xray.crt --keypath /etc/xray/xray.key --ecc
-    chmod 777 /etc/xray/xray.key
-    print_success "SSL Certificate"
+
+domain=$(cat /root/domain 2>/dev/null)
+
+# VALIDASI DOMAIN
+if [[ -z "$domain" ]]; then
+    echo "ERROR: Domain kosong!"
+    exit 1
+fi
+
+# STOP PORT 80
+systemctl stop nginx 2>/dev/null || true
+systemctl stop haproxy 2>/dev/null || true
+fuser -k 80/tcp 2>/dev/null || true
+
+# CLEAN CERT
+rm -rf /etc/xray/xray.key /etc/xray/xray.crt
+
+# INSTALL ACME
+rm -rf /root/.acme.sh
+mkdir /root/.acme.sh
+
+curl -s https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+chmod +x /root/.acme.sh/acme.sh
+
+/root/.acme.sh/acme.sh --upgrade --auto-upgrade
+/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+
+# ISSUE
+/root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256 || {
+    echo "SSL GAGAL!"
+    exit 1
+}
+
+# INSTALL
+/root/.acme.sh/acme.sh --installcert -d $domain \
+--fullchainpath /etc/xray/xray.crt \
+--keypath /etc/xray/xray.key --ecc
+
+chmod 600 /etc/xray/xray.key
+
+# START LAGI
+systemctl start nginx 2>/dev/null || true
+systemctl start haproxy 2>/dev/null || true
+
+print_success "SSL Certificate"
 }
 
 function make_folder_xray() {
@@ -922,17 +911,39 @@ print_success "Menu Packet"
 function enable_services(){
 clear
 print_install "Enable Service"
-    systemctl daemon-reload
-    systemctl start netfilter-persistent
-    systemctl enable rc-local
-    systemctl enable --now cron
-    systemctl enable --now netfilter-persistent
-    systemctl restart nginx
-    systemctl restart xray
-    systemctl restart cron
-    systemctl restart haproxy
-    print_success "Enable Service"
-    clear
+
+systemctl daemon-reload
+
+# Enable service utama
+systemctl enable rc-local
+systemctl enable --now cron
+systemctl enable --now netfilter-persistent
+
+# Restart service
+systemctl restart nginx
+systemctl restart xray
+systemctl restart haproxy
+systemctl restart cron
+
+# =========================
+# FIX INTERNET (WAJIB)
+# =========================
+
+# Aktifkan IP Forward
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# Detect interface otomatis
+IFACE=$(ip route | grep default | awk '{print $5}' | head -n1)
+
+# Tambahkan NAT (anti double)
+iptables -t nat -C POSTROUTING -o $IFACE -j MASQUERADE 2>/dev/null || \
+iptables -t nat -A POSTROUTING -o $IFACE -j MASQUERADE
+
+# Save iptables
+netfilter-persistent save
+
+print_success "Enable Service + Internet Fix"
+clear
 }
 
 # Fingsi Install Script
