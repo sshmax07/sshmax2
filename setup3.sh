@@ -737,12 +737,15 @@ gotop_latest="$(curl -s https://api.github.com/repos/xxxserxxx/gotop/releases | 
     dpkg -i /tmp/gotop.deb >/dev/null 2>&1
     
     # > Buat swap sebesar 1G
-    dd if=/dev/zero of=/swapfile bs=1024 count=1048576
-    mkswap /swapfile
-    chown root:root /swapfile
-    chmod 0600 /swapfile >/dev/null 2>&1
-    swapon /swapfile >/dev/null 2>&1
-    sed -i '$ i\/swapfile      swap swap   defaults    0 0' /etc/fstab
+    # MATIKAN & HAPUS SWAP LAMA (ANTI ERROR)
+swapoff /swapfile 2>/dev/null || true
+rm -f /swapfile
+
+# BUAT SWAP BARU
+dd if=/dev/zero of=/swapfile bs=1024 count=1048576
+mkswap /swapfile
+chmod 600 /swapfile
+swapon /swapfile
 
     # > Singkronisasi jam
     chronyd -q 'server 0.id.pool.ntp.org iburst'
