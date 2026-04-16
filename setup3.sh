@@ -568,27 +568,47 @@ print_install "Memasang Service Limit IP & Quota"
 wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel && chmod +x fv-tunnel && ./fv-tunnel
 
 # // Installing UDP Mini
-mkdir -p /usr/local/kyt/
-wget -q -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
+
+mkdir -p /usr/local/kyt
+
+# STOP SERVICE LAMA
+systemctl stop udp-mini-1 2>/dev/null || true
+systemctl stop udp-mini-2 2>/dev/null || true
+systemctl stop udp-mini-3 2>/dev/null || true
+pkill -f udp-mini 2>/dev/null || true
+
+# HAPUS FILE LAMA
+rm -f /usr/local/kyt/udp-mini
+
+# DOWNLOAD BINARY (WAJIB VALIDASI)
+wget -q --show-progress -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini" || {
+    echo "GAGAL download udp-mini!"
+    exit 1
+}
+
+# CEK FILE
+if [[ ! -s /usr/local/kyt/udp-mini ]]; then
+    echo "udp-mini kosong / rusak!"
+    exit 1
+fi
+
 chmod +x /usr/local/kyt/udp-mini
+
+# DOWNLOAD SERVICE
 wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
 wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
 wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
-systemctl disable udp-mini-1
-systemctl stop udp-mini-1
-systemctl enable udp-mini-1
-systemctl start udp-mini-1
-systemctl disable udp-mini-2
-systemctl stop udp-mini-2
-systemctl enable udp-mini-2
-systemctl start udp-mini-2
-systemctl disable udp-mini-3
-systemctl stop udp-mini-3
-systemctl enable udp-mini-3
-systemctl start udp-mini-3
+
+# RELOAD SYSTEMD (WAJIB)
+systemctl daemon-reload
+
+# ENABLE & START (LEBIH CLEAN)
+systemctl enable --now udp-mini-1
+systemctl enable --now udp-mini-2
+systemctl enable --now udp-mini-3
+
 print_success "Limit IP Service"
 }
-
 clear
 function ins_SSHD(){
 clear
@@ -676,13 +696,13 @@ printf "q\n" | rclone config
 wget -O /root/.config/rclone/rclone.conf "${REPO}config/rclone.conf"
 
 # Install Wondershaper
-cd /bin
+cd /usr/local/src
+rm -rf wondershaper
 git clone https://github.com/magnific0/wondershaper.git
 cd wondershaper
-sudo make install
+make install
 cd
 rm -rf wondershaper
-echo > /home/limit
 
 # Email notification
 apt install msmtp-mta ca-certificates bsd-mailx -y
