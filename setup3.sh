@@ -1,14 +1,25 @@
 #!/bin/bash
-set -e
 
-export DEBIAN_FRONTEND=noninteractive
-
-IP=$(curl -s ifconfig.me)
-
+Green="\e[92;1m"
 RED="\033[31m"
-GREEN="\033[32m"
 YELLOW="\033[33m"
-NC="\033[0m"
+BLUE="\033[36m"
+FONT="\033[0m"
+GREENBG="\033[42;37m"
+REDBG="\033[41;37m"
+OK="${Green}  »${FONT}"
+ERROR="${RED}[ERROR]${FONT}"
+GRAY="\e[1;30m"
+NC='\e[0m'
+red='\e[1;31m'
+green='\e[0;32m'
+
+clear
+# // Exporint IP AddressInformation
+export IP=$( curl -sS icanhazip.com )
+
+# // Clear Data
+clear
 
 # // Banner
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -167,13 +178,6 @@ EOF
     systemctl start disable-ipv6.service
 
     print_success "IPv6 Disabled Permanently"
-    
-    # OPTIMASI NETWORK BUFFER (WAJIB)
-echo "net.core.rmem_max=26214400" >> /etc/sysctl.conf
-echo "net.core.wmem_max=26214400" >> /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-sysctl -p
 
     # iptables-persistent (IPv4 only)
     echo iptables-persistent iptables-persistent/autosave_v6 boolean false | debconf-set-selections
@@ -227,13 +231,16 @@ function base_package() {
                    build-essential gcc g++ make cmake git screen socat xz-utils \
                    apt-transport-https dnsutils chrony
 
+    apt upgrade -y
+    apt dist-upgrade -y
+
     # WAKTU & NTP
     systemctl enable --now chrony
     ntpdate pool.ntp.org
 
     # MATIKAN firewall bawaan (JANGAN DIHAPUS)
-    systemctl disable --now ufw 2>/dev/null || true
-	systemctl disable --now firewalld 2>/dev/null || true
+    systemctl disable --now ufw 2>/dev/null
+    systemctl disable --now firewalld 2>/dev/null
 
     # Hapus mail server yang tidak perlu
     apt-get remove --purge exim4 -y
@@ -310,134 +317,122 @@ print_success "Firewall Active"
 }
 
 clear
+# Fungsi input domain
 function pasang_domain() {
 echo -e ""
 clear
-
-# FIX PATH (WAJIB)
-mkdir -p /etc/xray
-mkdir -p /etc/v2ray
-touch /etc/xray/domain
-touch /etc/v2ray/domain
-
 echo -e "${green} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ${FONT}"
 echo -e "${YELLOW}» SETUP DOMAIN CLOUDFLARE ${FONT}"
 echo -e "${green} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ${FONT}"
 echo -e "  [1] Domain Pribadi"
 echo -e "  [2] Domain Bawaan"
 echo -e "${green} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ${FONT}"
-
 read -p "  Silahkan Pilih Menu Domain 1 or 2 (enter) : " host
 echo ""
-
 if [[ $host == "1" ]]; then
-    echo -e "   \e[1;32mMasukan Domain Anda ! $NC"
-    read -p "   Subdomain: " host1
-
-    echo "IP=" >> /var/lib/kyt/ipvps.conf
-    echo $host1 > /etc/xray/domain
-    echo $host1 > /etc/v2ray/domain
-    echo $host1 > /root/domain
-
+echo -e "   \e[1;32mMasukan Domain Anda ! $NC"
+read -p "   Subdomain: " host1
+echo "IP=" >> /var/lib/kyt/ipvps.conf
+echo $host1 > /etc/xray/domain
+echo $host1 > /root/domain
+echo ""
 elif [[ $host == "2" ]]; then
-    # install cf + FIX PATH
-    wget -q ${REPO}files/cf.sh -O cf.sh
-
-    # 🔥 PATCH AUTO (INI PENTING)
-    sed -i 's|/etc/v2ray/domain|/etc/xray/domain|g' cf.sh
-
-    chmod +x cf.sh
-    ./cf.sh
-
-    # Sync hasil ke xray
-    if [ -f /etc/xray/domain ]; then
-        cat /etc/xray/domain > /root/domain
-    fi
-
-    rm -f cf.sh
-    clear
-
+#install cf
+wget ${REPO}files/cf.sh && chmod +x cf.sh && ./cf.sh
+rm -f /root/cf.sh
+clear
 else
-    print_install "Random Subdomain/Domain is Used"
-    clear
-fi
+print_install "Random Subdomain/Domain is Used"
+clear
+    fi
 }
 
 clear
 #GANTI PASSWORD DEFAULT
 restart_system(){
-
-echo -e "\e[32mChecking License...\e[0m"
-
-MYIP=$(curl -s ipv4.icanhazip.com)
+#IZIN SCRIPT
+MYIP=$(curl -sS ipv4.icanhazip.com)
+echo -e "\e[32mloading...\e[0m" 
+clear
 izinsc="https://raw.githubusercontent.com/sshmax07/izin/main/izin"
-
-data=$(curl -s $izinsc | grep $MYIP)
-
-if [[ -z "$data" ]]; then
-    username="unknown"
-    exp="unknown"
-else
-    username=$(echo "$data" | awk '{print $2}')
-    exp=$(echo "$data" | awk '{print $3}')
-fi
-
-echo "$username" > /usr/bin/user
-echo "$exp" > /usr/bin/e
-echo "1.0" > /usr/bin/ver
-
-echo -e "User     : $username"
-echo -e "Expired  : $exp"
+# USERNAME
+rm -f /usr/bin/user
+username=$(curl $izinsc | grep $MYIP | awk '{print $2}')
+echo "$username" >/usr/bin/user
+expx=$(curl $izinsc | grep $MYIP | awk '{print $3}')
+echo "$expx" >/usr/bin/e
+# DETAIL ORDER
+username=$(cat /usr/bin/user)
+oid=$(cat /usr/bin/ver)
+exp=$(cat /usr/bin/e)
+clear
+# CERTIFICATE STATUS
+d1=$(date -d "$valid" +%s)
+d2=$(date -d "$today" +%s)
+certifacate=$(((d1 - d2) / 86400))
+# VPS Information
+DATE=$(date +'%Y-%m-%d')
+datediff() {
+    d1=$(date -d "$1" +%s)
+    d2=$(date -d "$2" +%s)
+    echo -e "$COLOR1 $NC Expiry In   : $(( (d1 - d2) / 86400 )) Days"
 }
+mai="datediff "$Exp" "$DATE""
+
+ISP=$(curl -s ipinfo.io/org | cut -d " " -f 2-10 )
+# Status Expired Active
+Info="(${green}Active${NC})"
+Error="(${RED}ExpiRED${NC})"
+today=`date -d "0 days" +"%Y-%m-%d"`
+Exp1=$(curl $izinsc | grep $MYIP | awk '{print $4}')
+if [[ $today < $Exp1 ]]; then
+sts="${Info}"
+else
+sts="${Error}"
+fi
+TIMES="10"
+CHATID=""
+KEY=""
+URL="https://api.telegram.org/bot$KEY/sendMessage"
+    TIMEZONE=$(printf '%(%H:%M:%S)T')
+    TEXT="
+<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
+<b>PREMIUM AUTOSCRIPT</b>
+<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
+<code>User     :</code><code>$username</code>
+<code>Domain   :</code><code>$domain</code>
+<code>IPVPS    :</code><code>$MYIP</code>
+<code>ISP      :</code><code>$ISP</code>
+<code>DATE     :</code><code>$DATE</code>
+<code>Time     :</code><code>$TIMEZONE</code>
+<code>Exp Sc.  :</code><code>$exp</code>
+<code>━━━━━━━━━━━━━━━━━━━━━━━━━</code>
+<i>Automatic Notifications From Github</i>
+"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"t.me"}]]}' 
+
+    curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
+}
+clear
 # Pasang SSL
 function pasang_ssl() {
 clear
 print_install "Memasang SSL Pada Domain"
-
-domain=$(cat /root/domain 2>/dev/null)
-
-# VALIDASI DOMAIN
-if [[ -z "$domain" ]]; then
-    echo "ERROR: Domain kosong!"
-    exit 1
-fi
-
-# STOP PORT 80
-systemctl stop nginx 2>/dev/null || true
-systemctl stop haproxy 2>/dev/null || true
-fuser -k 80/tcp 2>/dev/null || true
-
-# CLEAN CERT
-rm -rf /etc/xray/xray.key /etc/xray/xray.crt
-
-# INSTALL ACME
-rm -rf /root/.acme.sh
-mkdir /root/.acme.sh
-
-curl -s https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
-chmod +x /root/.acme.sh/acme.sh
-
-/root/.acme.sh/acme.sh --upgrade --auto-upgrade
-/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-
-# ISSUE
-/root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256 || {
-    echo "SSL GAGAL!"
-    exit 1
-}
-
-# INSTALL
-/root/.acme.sh/acme.sh --installcert -d $domain \
---fullchainpath /etc/xray/xray.crt \
---keypath /etc/xray/xray.key --ecc
-
-chmod 600 /etc/xray/xray.key
-
-# START LAGI
-systemctl start nginx 2>/dev/null || true
-systemctl start haproxy 2>/dev/null || true
-
-print_success "SSL Certificate"
+    rm -rf /etc/xray/xray.key
+    rm -rf /etc/xray/xray.crt
+    domain=$(cat /root/domain)
+    STOPWEBSERVER=$(lsof -i:80 | cut -d' ' -f1 | awk 'NR==2 {print $1}')
+    rm -rf /root/.acme.sh
+    mkdir /root/.acme.sh
+    systemctl stop $STOPWEBSERVER
+    systemctl stop nginx
+    curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+    chmod +x /root/.acme.sh/acme.sh
+    /root/.acme.sh/acme.sh --upgrade --auto-upgrade
+    /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+    /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
+    ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/xray/xray.crt --keypath /etc/xray/xray.key --ecc
+    chmod 777 /etc/xray/xray.key
+    print_success "SSL Certificate"
 }
 
 function make_folder_xray() {
@@ -568,47 +563,27 @@ print_install "Memasang Service Limit IP & Quota"
 wget -q https://raw.githubusercontent.com/sshmax07/sshmax2/main/config/fv-tunnel && chmod +x fv-tunnel && ./fv-tunnel
 
 # // Installing UDP Mini
-
-mkdir -p /usr/local/kyt
-
-# STOP SERVICE LAMA
-systemctl stop udp-mini-1 2>/dev/null || true
-systemctl stop udp-mini-2 2>/dev/null || true
-systemctl stop udp-mini-3 2>/dev/null || true
-pkill -f udp-mini 2>/dev/null || true
-
-# HAPUS FILE LAMA
-rm -f /usr/local/kyt/udp-mini
-
-# DOWNLOAD BINARY (WAJIB VALIDASI)
-wget -q --show-progress -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini" || {
-    echo "GAGAL download udp-mini!"
-    exit 1
-}
-
-# CEK FILE
-if [[ ! -s /usr/local/kyt/udp-mini ]]; then
-    echo "udp-mini kosong / rusak!"
-    exit 1
-fi
-
+mkdir -p /usr/local/kyt/
+wget -q -O /usr/local/kyt/udp-mini "${REPO}files/udp-mini"
 chmod +x /usr/local/kyt/udp-mini
-
-# DOWNLOAD SERVICE
 wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}files/udp-mini-1.service"
 wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}files/udp-mini-2.service"
 wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}files/udp-mini-3.service"
-
-# RELOAD SYSTEMD (WAJIB)
-systemctl daemon-reload
-
-# ENABLE & START (LEBIH CLEAN)
-systemctl enable --now udp-mini-1
-systemctl enable --now udp-mini-2
-systemctl enable --now udp-mini-3
-
+systemctl disable udp-mini-1
+systemctl stop udp-mini-1
+systemctl enable udp-mini-1
+systemctl start udp-mini-1
+systemctl disable udp-mini-2
+systemctl stop udp-mini-2
+systemctl enable udp-mini-2
+systemctl start udp-mini-2
+systemctl disable udp-mini-3
+systemctl stop udp-mini-3
+systemctl enable udp-mini-3
+systemctl start udp-mini-3
 print_success "Limit IP Service"
 }
+
 clear
 function ins_SSHD(){
 clear
@@ -625,34 +600,12 @@ clear
 function ins_dropbear(){
 clear
 print_install "Menginstall Dropbear"
-
-# Install
+# // Installing Dropbear
 apt-get install dropbear -y > /dev/null 2>&1
-
-# Hapus config lama (biar tidak bentrok)
-rm -f /etc/default/dropbear
-
-# Config aman (ANTI BENTROK PORT)
-cat > /etc/default/dropbear <<EOF
-NO_START=0
-DROPBEAR_PORT=444
-DROPBEAR_EXTRA_ARGS="-p 555 -p 666"
-DROPBEAR_BANNER="/etc/issue.net"
-EOF
-
-# Permission benar
-chmod 644 /etc/default/dropbear
-
-# Reload systemd
-systemctl daemon-reload
-
-# Enable & start
-systemctl enable dropbear
-systemctl restart dropbear || true
-
-# Status
-systemctl status dropbear --no-pager
-
+wget -q -O /etc/default/dropbear "${REPO}config/dropbear.conf"
+chmod +x /etc/default/dropbear
+/etc/init.d/dropbear restart
+/etc/init.d/dropbear status
 print_success "Dropbear"
 }
 
@@ -660,29 +613,23 @@ clear
 function ins_vnstat(){
 clear
 print_install "Menginstall Vnstat"
-
-# Install saja (cukup ini)
+# setting vnstat
 apt -y install vnstat > /dev/null 2>&1
-
-# Detect interface
-NET=$(ip route | grep default | awk '{print $5}' | head -n1)
-
-# Tambahkan interface
-vnstat --add -i $NET 2>/dev/null || true
-
-# Fix config
-sed -i "s|Interface.*|Interface \"$NET\"|g" /etc/vnstat.conf
-
-# Permission
-chown -R vnstat:vnstat /var/lib/vnstat
-
-# Enable service
+/etc/init.d/vnstat restart
+apt -y install libsqlite3-dev > /dev/null 2>&1
+wget https://humdi.net/vnstat/vnstat-2.6.tar.gz
+tar zxvf vnstat-2.6.tar.gz
+cd vnstat-2.6
+./configure --prefix=/usr --sysconfdir=/etc && make && make install
+cd
+vnstat -u -i $NET
+sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
+chown vnstat:vnstat /var/lib/vnstat -R
 systemctl enable vnstat
-systemctl restart vnstat
-
-# Status
-systemctl status vnstat --no-pager
-
+/etc/init.d/vnstat restart
+/etc/init.d/vnstat status
+rm -f /root/vnstat-2.6.tar.gz
+rm -rf /root/vnstat-2.6
 print_success "Vnstat"
 }
 
@@ -696,13 +643,13 @@ printf "q\n" | rclone config
 wget -O /root/.config/rclone/rclone.conf "${REPO}config/rclone.conf"
 
 # Install Wondershaper
-cd /usr/local/src
-rm -rf wondershaper
+cd /bin
 git clone https://github.com/magnific0/wondershaper.git
 cd wondershaper
-make install
+sudo make install
 cd
 rm -rf wondershaper
+echo > /home/limit
 
 # Email notification
 apt install msmtp-mta ca-certificates bsd-mailx -y
@@ -737,15 +684,12 @@ gotop_latest="$(curl -s https://api.github.com/repos/xxxserxxx/gotop/releases | 
     dpkg -i /tmp/gotop.deb >/dev/null 2>&1
     
     # > Buat swap sebesar 1G
-    # MATIKAN & HAPUS SWAP LAMA (ANTI ERROR)
-swapoff /swapfile 2>/dev/null || true
-rm -f /swapfile
-
-# BUAT SWAP BARU
-dd if=/dev/zero of=/swapfile bs=1024 count=1048576
-mkswap /swapfile
-chmod 600 /swapfile
-swapon /swapfile
+    dd if=/dev/zero of=/swapfile bs=1024 count=1048576
+    mkswap /swapfile
+    chown root:root /swapfile
+    chmod 0600 /swapfile >/dev/null 2>&1
+    swapon /swapfile >/dev/null 2>&1
+    sed -i '$ i\/swapfile      swap swap   defaults    0 0' /etc/fstab
 
     # > Singkronisasi jam
     chronyd -q 'server 0.id.pool.ntp.org iburst'
@@ -775,47 +719,34 @@ print_success "Fail2ban"
 }
 
 function ins_epro(){
-clear
-print_install "Menginstall ePro WebSocket Proxy"
+    clear
+    print_install "Menginstall ePro WebSocket Proxy"
 
-# DOWNLOAD WS (ANTI ERROR)
-wget -q -O /usr/bin/ws "${REPO}files/ws" || {
-    echo "Gagal download ws"
-    exit 1
-}
+    wget -O /usr/bin/ws "${REPO}files/ws" >/dev/null 2>&1
+    wget -O /usr/bin/tun.conf "${REPO}config/tun.conf" >/dev/null 2>&1
+    wget -O /etc/systemd/system/ws.service "${REPO}files/ws.service" >/dev/null 2>&1
 
-# VALIDASI FILE
-if [[ ! -s /usr/bin/ws ]]; then
-    echo "File ws kosong!"
-    exit 1
-fi
+    chmod +x /usr/bin/ws
+    chmod 644 /usr/bin/tun.conf
+    chmod +x /etc/systemd/system/ws.service
 
-chmod +x /usr/bin/ws
+    systemctl daemon-reexec
+    systemctl enable ws
+    systemctl restart ws
 
-# CONFIG
-wget -q -O /usr/bin/tun.conf "${REPO}config/tun.conf"
-wget -q -O /etc/systemd/system/ws.service "${REPO}files/ws.service"
+    wget -q -O /usr/local/share/xray/geosite.dat \
+        "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+    wget -q -O /usr/local/share/xray/geoip.dat \
+        "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
 
-chmod 644 /usr/bin/tun.conf
-chmod 644 /etc/systemd/system/ws.service
+    wget -O /usr/sbin/ftvpn "${REPO}files/ftvpn" >/dev/null 2>&1
+    chmod +x /usr/sbin/ftvpn
 
-# RELOAD SYSTEMD
-systemctl daemon-reload
+    # BERSIH-BERSIH
+    apt autoclean -y >/dev/null 2>&1
+    apt autoremove -y >/dev/null 2>&1
 
-# START SERVICE
-systemctl enable --now ws
-
-# GEO DATA
-wget -q -O /usr/local/share/xray/geosite.dat \
-"https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
-
-wget -q -O /usr/local/share/xray/geoip.dat \
-"https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
-
-# CLEAN
-apt autoremove -y >/dev/null 2>&1
-
-print_success "ePro WebSocket Proxy"
+    print_success "ePro WebSocket Proxy"
 }
 
 function ins_restart(){
@@ -953,39 +884,17 @@ print_success "Menu Packet"
 function enable_services(){
 clear
 print_install "Enable Service"
-
-systemctl daemon-reload
-
-# Enable service utama
-systemctl enable rc-local
-systemctl enable --now cron
-systemctl enable --now netfilter-persistent
-
-# Restart service
-systemctl restart nginx
-systemctl restart xray
-systemctl restart haproxy
-systemctl restart cron
-
-# =========================
-# FIX INTERNET (WAJIB)
-# =========================
-
-# Aktifkan IP Forward
-echo 1 > /proc/sys/net/ipv4/ip_forward
-
-# Detect interface otomatis
-IFACE=$(ip route | grep default | awk '{print $5}' | head -n1)
-
-# Tambahkan NAT (anti double)
-iptables -t nat -C POSTROUTING -o $IFACE -j MASQUERADE 2>/dev/null || \
-iptables -t nat -A POSTROUTING -o $IFACE -j MASQUERADE
-
-# Save iptables
-netfilter-persistent save
-
-print_success "Enable Service + Internet Fix"
-clear
+    systemctl daemon-reload
+    systemctl start netfilter-persistent
+    systemctl enable rc-local
+    systemctl enable --now cron
+    systemctl enable --now netfilter-persistent
+    systemctl restart nginx
+    systemctl restart xray
+    systemctl restart cron
+    systemctl restart haproxy
+    print_success "Enable Service"
+    clear
 }
 
 # Fingsi Install Script
@@ -998,6 +907,7 @@ clear
     firewall_setup
     make_folder_xray
     pasang_domain
+    password_default
     pasang_ssl
     install_xray
     ssh
@@ -1028,6 +938,6 @@ rm -rf /root/domain
 secs_to_human "$(($(date +%s) - ${start}))"
 sudo hostnamectl set-hostname $username
 echo -e "${green} Script Successfull Installed"
-echo "Reboot dalam 5 detik..."
-sleep 5
+echo ""
+read -p "$( echo -e "Press ${YELLOW}[ ${NC}${YELLOW}Enter${NC} ${YELLOW}]${NC} For reboot") "
 reboot
